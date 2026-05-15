@@ -1,0 +1,3 @@
+sample,fastq1,fastq2
+BPES14_H3K27Ac,/mnt/iusers01/jw01/u08582cr/cuttag/raw_data/BPES14_H3K27Ac/13_0MUH_034SIPBLN_BPES14_H3K27Ac_hs_i701-503_r1.fastq.gz,/mnt/iusers01/jw01/u08582cr/cuttag/raw_data/BPES14_H3K27Ac/13_0MUH_034SIPBLN_BPES14_H3K27Ac_hs_i701-503_r2.fastq.gz
+BPES14_H3K4me3,/mnt/iusers01/jw01/u08582cr/cuttag/raw_data/BPES14_H3K4me3/86_0MUR_034SIPBLN_BPES14_H3K4me3_hs_i-701-505_r1.fastq.gz,/mnt/iusers01/jw01/u08582cr/cuttag/raw_data/BPES14_H3K4me3/86_0MUR_034SIPBLN_BPES14_H3K4me3_hs_i-701-505_r2.fastq.gz
