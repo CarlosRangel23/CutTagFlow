@@ -14,7 +14,7 @@ process FASTQC {
     path "*_fastqc.html"
 
     publishDir "${params.outdir}/01_qc/${qc_label}/${sample}",
-               mode: 'move'
+          mode: 'move'
 
     script:
     """

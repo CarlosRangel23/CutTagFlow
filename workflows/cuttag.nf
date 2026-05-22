@@ -1,6 +1,7 @@
 nextflow.enable.dsl = 2
 
 include { FASTQC } from '../modules/01_preprocessing/fastqc'
+include { TRIM } from '../modules/01_preprocessing/trimming'
 
 workflow CUTTAG {
 
@@ -28,18 +29,17 @@ workflow CUTTAG {
     }
 
     if (params.fastqc_trim) {
-        Channel
-            .from(samples_ch)
+        samples_ch
             .map { sample, fastq1, fastq2 ->
                 tuple(
                     sample,
-                    file("${params.outdir}/02_trimmed/${sample}_trimmed_R1.fastq.gz"),
-                    file("${params.outdir}/02_trimmed/${sample}_trimmed_R2.fastq.gz")
+                    file("${params.outdir}/01_qc/trim/${sample}/${sample}_trimmed_R1.fastq.gz"),
+                    file("${params.outdir}/01_qc/trim/${sample}/${sample}_trimmed_R2.fastq.gz")
                 )
             }
             .set { trimmed_fastq_ch }
     
-        FASTQC(trimmed_fastq_ch, 'fastqc_trimmed')
+        FASTQC(trimmed_fastq_ch, 'qc_trimmed')
     }
 
     if (params.alignment) {
