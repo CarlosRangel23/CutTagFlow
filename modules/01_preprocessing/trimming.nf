@@ -3,7 +3,6 @@ nextflow.enable.dsl = 2
 process TRIM {
 
     tag "$sample"
-    label 'qc'
 
     input:
     tuple val(sample), path(fastq1), path(fastq2)
@@ -13,7 +12,7 @@ process TRIM {
           path("${sample}_trimmed_R1.fastq.gz"),
           path("${sample}_trimmed_R2.fastq.gz")
 
-    publishDir "${params.outdir}/01_qc/trim/${sample}",
+    publishDir "${params.outdir}/01_qc/trimmed/${sample}",
           mode: 'move'
 
 
