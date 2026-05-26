@@ -13,7 +13,7 @@ process TRIM {
           path("${sample}_trimmed_R2.fastq.gz")
 
     publishDir "${params.outdir}/01_qc/trimmed/${sample}",
-          mode: 'move'
+          mode: 'symlink'
 
 
     script:

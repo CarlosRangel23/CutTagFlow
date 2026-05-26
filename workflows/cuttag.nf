@@ -1,7 +1,12 @@
 nextflow.enable.dsl = 2
 
-include { FASTQC } from '../modules/01_preprocessing/fastqc'
+include { FASTQC as FASTQC_RAW } from '../modules/01_preprocessing/fastqc'
+include { FASTQC as FASTQC_TRIM } from '../modules/01_preprocessing/fastqc'
 include { TRIM } from '../modules/01_preprocessing/trimming'
+include { MULTIQC as MULTIQC_RAW } from '../modules/01_preprocessing/multiqc'
+include { MULTIQC as MULTIQC_TRIM } from '../modules/01_preprocessing/multiqc'
+include { ALIGNMENT } from '../modules/02_alignment/alignment'
+
 
 workflow CUTTAG {
 
@@ -21,34 +26,31 @@ workflow CUTTAG {
 
 
     if (params.fastqc) {
-        FASTQC(samples_ch,"fastqc_raw")
+        FASTQC_RAW(samples_ch,"fastqc_raw")
+        MULTIQC_RAW( Channel.empty().mix(*FASTQC_RAW.out).collect(), 'raw' )    
     }
 
     if (params.trim) {
         TRIM(samples_ch)
-            reads_for_alignment = TRIM.out.reads
     }
+    
+    def trimmed_fastq_ch = params.trim ? 
+        TRIM.out : 
+        samples_ch.map { sample, f1, f2 ->
+            tuple(
+                sample,
+                file("${params.outdir}/01_qc/trimmed/${sample}/${sample}_trimmed_R1.fastq.gz", checkIfExists: true),
+                file("${params.outdir}/01_qc/trimmed/${sample}/${sample}_trimmed_R2.fastq.gz", checkIfExists: true)
+            )
+        }
 
     if (params.fastqc_trim) {
-        samples_ch
-            .map { sample, fastq1, fastq2 ->
-                tuple(
-                    sample,
-                    file("${params.outdir}/01_qc/trimmed/${sample}/${sample}_trimmed_R1.fastq.gz"),
-                    file("${params.outdir}/01_qc/trimmed/${sample}/${sample}_trimmed_R2.fastq.gz")
-                )
-            }
-            .set { trimmed_fastq_ch }
-    
-        FASTQC(trimmed_fastq_ch, 'fastqc_trimmed')
+        FASTQC_TRIM(trimmed_fastq_ch, 'fastqc_trimmed')
+        MULTIQC_TRIM( Channel.empty().mix(*FASTQC_TRIM.out).collect(), 'trimmed' )    
     }
 
     if (params.alignment) {
-        ALIGNMENT(samples_ch)
-    }
-
-    if (params.peaks) {
-        PEAKS(samples_ch)
+        ALIGNMENT(trimmed_fastq_ch, params.bowtie2_index)
     }
 
 }

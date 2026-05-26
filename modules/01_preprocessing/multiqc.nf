@@ -5,17 +5,17 @@ process MULTIQC {
     label 'qc'
 
     input:
-    path qc_dir
+    path qc_files
+    val qc_label
 
     output:
-    path "multiqc_report.html"
-    path "multiqc_data"
+    path "${qc_label}_multiqc_report.html"
+    path "${qc_label}_multiqc_report_data"
 
-    publishDir "${params.outdir}/01_qc/multiqc",
-               mode: 'copy'
+    publishDir "${params.outdir}/01_qc/multiqc/${qc_label}", mode: 'copy'
 
     script:
     """
-    multiqc $qc_dir
+    multiqc . -n ${qc_label}_multiqc_report.html
     """
 }
