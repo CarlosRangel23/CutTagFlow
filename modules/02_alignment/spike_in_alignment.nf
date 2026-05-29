@@ -1,7 +1,7 @@
 nextflow.enable.dsl = 2
 
 process ALIGNMENT {
-
+  
     tag "$sample"
     label 'process_high' 
 
