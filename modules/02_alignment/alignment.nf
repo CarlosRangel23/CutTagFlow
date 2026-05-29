@@ -14,7 +14,7 @@ process ALIGNMENT {
     path "${sample}.sorted.bam.bai"         , emit: bai
     path "${sample}.bowtie2.txt"            , emit: summary
 
-    publishDir "${params.outdir}/02_alignment/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/02_alignment/temp_align/${sample}", mode: 'copy'
 
     script:
     def cores = task.cpus

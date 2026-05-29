@@ -192,7 +192,7 @@ for (current_histone in unique_histones) {
     scale_fill_manual(values = c("X" = "#F8766D", "Y" = "#00BFC4")) +
     theme(
       plot.title = element_text(face = "bold"),
-      axis.text.x = element_text(angle = 0, hjust = 0.5, fontface = "bold")
+      axis.text.x = element_text(angle = 45, hjust = 1)
     )
   
   # Print the clean page for the current histone mark into the PDF stream

@@ -15,7 +15,7 @@ process MARK_DUPLICATES {
     path "${sample}_fragmentLen.txt"                         , emit: frag_len
     path "${sample}_idxstats.txt"                            , emit: idxstats
 
-    publishDir "${params.outdir}/03_filtered/summary_post_alignment/${sample}", mode: 'copy'
+    publishDir "${params.outdir}/02_aligment/temp_picard_idxstats/${sample}", mode: 'copy'
 
     script:
     """

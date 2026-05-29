@@ -1,8 +1,10 @@
 #!/usr/bin/env Rscript
 
-# Load required libraries
+# Load required sequencing and parsing libraries
 library(stringr)
 library(ggplot2)
+library(dplyr)
+library(tidyr)
 
 # Initialize data frames for parsing
 data <- data.frame(Sample = character(), Metric = character(), Reads = numeric(), Percentage = numeric(), stringsAsFactors = FALSE)
@@ -43,8 +45,6 @@ for (f in log_files) {
 # =========================================================================
 # SECTION 1: CREATE A CONSOLIDATED DATA FRAME AND WRITE TO A SUMMARY TXT
 # =========================================================================
-
-# Build a comprehensive flat dataframe containing all information per sample
 summary_df <- data.frame(Sample = character(), stringsAsFactors = FALSE)
 
 for (s in unique(data$Sample)) {
@@ -54,7 +54,7 @@ for (s in unique(data$Sample)) {
   s_mult <- data[data$Sample == s & data$Metric == ">1 times", ]
   
   row_data <- data.frame(
-    Sample                  = s,
+    Sample                   = s,
     Total_Input_Reads       = s_overall$TotalReads,
     Overall_Alignment_Rate_Pct = s_overall$OverallRate,
     Aligned_0_Times_Reads   = s_0$Reads,
@@ -69,35 +69,80 @@ for (s in unique(data$Sample)) {
   summary_df <- rbind(summary_df, row_data)
 }
 
-# Export the final consolidated dataframe to a tab-separated text file (.txt)
-write.table(summary_df, 
-            file = "alignment_summary_report.txt", 
-            sep = "\t", 
-            row.names = FALSE, 
-            quote = FALSE)
+write.table(summary_df, file = "alignment_summary_report.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+
 
 # =========================================================================
-# SECTION 2: GENERATE GGPLOT (STACKED BAR WITH OVERALL RATE ON TOP)
+# SECTION 2: MOLECULAR SPLIT AND MULTI-PAGE PDF GENERATION BY HISTONE MARK
 # =========================================================================
-p <- ggplot(data, aes(x = Sample, y = Percentage, fill = Metric)) +
-  geom_bar(stat = "identity", position = "stack", width = 0.6) +
-  
-  geom_text(data = overall_data, 
-            aes(x = Sample, y = 102, label = paste0(OverallRate, "%")), 
-            inherit.aes = FALSE, 
-            vjust = 0, fontface = "bold", size = 4.5, color = "black") +
-  
-  scale_fill_manual(values = c("0 times" = "#e41a1c", "Exactly 1 time" = "#4daf4a", ">1 times" = "#377eb8")) +
-  
-  labs(title = "Bowtie2 Concordant Alignment Distribution",
-       subtitle = "Overall alignment rate displayed on top of bars",
-       x = "Samples",
-       y = "Percentage of Reads (%)",
-       fill = "Concordant Alignment") +
-  
-  theme_minimal() +
-  theme(plot.title = element_text(face = "bold", size = 14),
-        axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ylim(0, 110)
 
-ggsave("alignment_summary_plot.png", plot = p, width = 8, height = 6, dpi = 300)
+# Deconstruct sample naming convention into structural metadata fields
+# Expected nomenclature: SampleID_HistoneMark (e.g., BPES14_H3K27Ac)
+data <- data %>%
+  mutate(
+    Sample_ID = str_split_fixed(Sample, "_", 2)[,1],
+    Histone   = str_split_fixed(Sample, "_", 2)[,2]
+  )
+
+overall_data <- overall_data %>%
+  mutate(
+    Sample_ID = str_split_fixed(Sample, "_", 2)[,1],
+    Histone   = str_split_fixed(Sample, "_", 2)[,2]
+  )
+
+# Open the multi-page PDF graphics engine (set a dynamic landscape dimension)
+pdf("alignment_summary_plots.pdf", width = 11, height = 7)
+
+# Loop iteratively over unique biological modifications
+unique_histones <- unique(data$Histone)
+
+for (current_histone in unique_histones) {
+  
+  # Filter independent sub-datasets for the targeted histone page iteration
+  plot_subset <- data %>% filter(Histone == current_histone)
+  text_subset <- overall_data %>% filter(Histone == current_histone)
+  
+  p_histone <- ggplot(plot_subset, aes(x = Sample_ID, y = Percentage, fill = Metric)) +
+    geom_col(position = "stack", width = 0.6) +
+    
+    # Render the overall alignment text with a vertical 90-degree clear rotation
+    geom_text(
+      data = text_subset, 
+      aes(x = Sample_ID, y = 101, label = paste0(OverallRate, "%")), 
+      inherit.aes = FALSE, 
+      vjust = 0.5, 
+      hjust = 0,         # Left-aligns the text box right at the 101% baseline boundary
+      angle = 90,        # Turn text vertically up to prevent multi-sample overlap 
+      fontface = "bold", 
+      size = 3.5, 
+      color = "black"
+    ) +
+    
+    # Apply standard project-wide color palette mapping
+    scale_fill_manual(values = c("0 times" = "#e41a1c", "Exactly 1 time" = "#4daf4a", ">1 times" = "#377eb8")) +
+    
+    # Expand vertical limit layout slightly to avoid top vertical text clipping
+    scale_y_continuous(limits = c(0, 115), breaks = seq(0, 100, by = 20)) +
+    
+    labs(
+      title = paste("Bowtie2 Concordant Alignment Distribution - Target:", current_histone),
+      subtitle = "Overall alignment rates displayed vertically on top of individual sample stacks",
+      x = "Biological Sample ID",
+      y = "Percentage of Reads (%)",
+      fill = "Concordant Alignment"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(face = "bold", size = 15),
+      plot.subtitle = element_text(size = 11, color = "grey30"),
+      axis.text.x = element_text(angle = 45, hjust = 1, fontface = "bold", size = 10),
+      axis.text.y = element_text(size = 10),
+      legend.position = "right",
+      panel.grid.major.x = element_blank() # Strips out noise grids for vertical bars
+    )
+  
+  # Deploy page stream execution
+  print(p_histone)
+}
+
+dev.off()

@@ -4,7 +4,7 @@ process PLOT_QC_METRICS {
     tag "ggplot_qc_summary"
     label 'process_low'
 
-    publishDir "${params.outdir}/03_filtered/plots_post_alignment", mode: 'copy'
+    publishDir "${params.outdir}/02_alignment/alignment_summary", mode: 'copy'
 
     input:
     path picard_files   

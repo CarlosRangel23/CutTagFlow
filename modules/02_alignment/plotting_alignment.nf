@@ -9,10 +9,10 @@ process PLOT_ALIGNMENT {
     path(summary) 
 
     output:
-    path "alignment_summary_plot.png", emit: png
+    path "alignment_summary_plots.pdf", emit: summary_pdf
     path "alignment_summary_report.txt", emit: report
 
-    publishDir "${params.outdir}/02_alignment/plot", mode: 'copy'
+    publishDir "${params.outdir}/02_alignment/alignment_summary", mode: 'copy'
 
     script:
     """

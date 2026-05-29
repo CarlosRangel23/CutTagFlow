@@ -8,8 +8,8 @@ include { MULTIQC as MULTIQC_TRIM } from '../modules/01_preprocessing/multiqc'
 include { ALIGNMENT } from '../modules/02_alignment/alignment'
 include { SPIKEIN_ALIGNMENT } from '../modules/02_alignment/spike_in_alignment'
 include { PLOT_ALIGNMENT } from '../modules/02_alignment/plotting_alignment'
-include { MARK_DUPLICATES } from '../modules/03_filtering_conversion/mark_duplicates'
-include { PLOT_QC_METRICS } from '../modules/03_filtering_conversion/plot_alignment_metrics'
+include { MARK_DUPLICATES } from '../modules/02_filtering_conversion/mark_duplicates'
+include { PLOT_QC_METRICS } from '../modules/02_filtering_conversion/plot_alignment_metrics'
 
 
 workflow CUTTAG {
