@@ -6,7 +6,10 @@ include { TRIM } from '../modules/01_preprocessing/trimming'
 include { MULTIQC as MULTIQC_RAW } from '../modules/01_preprocessing/multiqc'
 include { MULTIQC as MULTIQC_TRIM } from '../modules/01_preprocessing/multiqc'
 include { ALIGNMENT } from '../modules/02_alignment/alignment'
+include { SPIKEIN_ALIGNMENT } from '../modules/02_alignment/spike_in_alignment'
 include { PLOT_ALIGNMENT } from '../modules/02_alignment/plotting_alignment'
+include { MARK_DUPLICATES } from '../modules/03_filtering_conversion/mark_duplicates'
+include { PLOT_QC_METRICS } from '../modules/03_filtering_conversion/plot_alignment_metrics'
 
 
 workflow CUTTAG {
@@ -42,7 +45,7 @@ workflow CUTTAG {
                 def r2 = file("${params.outdir}/01_qc/trimmed/${sample}/${sample}_trimmed_R2.fastq.gz")
             
             if ( !r1.exists() || !r2.exists() ) {
-                error "Inconsistencia: No existen los archivos recortados para la muestra ${sample} en la carpeta results/. ¿Te has olvidado de activar --trim true?"
+                error "No trimmed files for ${sample} in results folder"
             }
             
             return tuple(sample, r1, r2) 
@@ -57,6 +60,17 @@ workflow CUTTAG {
     if (params.alignment) {
         ALIGNMENT(trimmed_fastq_ch, params.bowtie2_index)
         PLOT_ALIGNMENT( ALIGNMENT.out.summary.collect() )
+        MARK_DUPLICATES( ALIGNMENT.out.bam )
+        PLOT_QC_METRICS( 
+            MARK_DUPLICATES.out.picard_metrics.collect(), 
+            MARK_DUPLICATES.out.frag_len.collect(), 
+            MARK_DUPLICATES.out.idxstats.collect() 
+        )    
+    }
+
+    if (params.spikein == 'dm6' || params.spikein == 'ecoli') {     
+        SPIKEIN_ALIGNMENT(trimmed_fastq_ch, params.spikein)
+        PLOT_ALIGNMENT( SPIKEIN_ALIGNMENT.out.summary.collect() )        
     }
 
 }

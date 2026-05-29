@@ -1,6 +1,7 @@
 nextflow.enable.dsl = 2
 
 process PLOT_ALIGNMENT {
+
     tag "ggplot_alignment"
     label 'process_low' 
 
@@ -8,12 +9,13 @@ process PLOT_ALIGNMENT {
     path(summary) 
 
     output:
-    path "alignment_efficiency.pdf", emit: pdf
+    path "alignment_summary_plot.png", emit: png
+    path "alignment_summary_report.txt", emit: report
 
     publishDir "${params.outdir}/02_alignment/plot", mode: 'copy'
 
     script:
     """
-    plotting_alignment.R
+    plotting_alignment.R ${summary}
     """
 }

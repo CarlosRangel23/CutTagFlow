@@ -15,7 +15,6 @@ process ALIGNMENT {
     path "${sample}.bowtie2.txt"            , emit: summary
 
     publishDir "${params.outdir}/02_alignment/${sample}", mode: 'copy'
-    publishDir "${params.outdir}/02_alignment/${sample}", mode: 'copy', 
 
     script:
     def cores = task.cpus
@@ -35,6 +34,10 @@ process ALIGNMENT {
       -x ${ref} \
       -1 ${fastq1} \
       -2 ${fastq2} \
+      --rg-id ${sample} \
+      --rg "SM:${sample}" \
+      --rg "LB:lib_${sample}" \
+      --rg "PL:ILLUMINA" \
     | samtools sort -@ ${cores} -o ${sample}.sorted.bam -
 
     samtools index ${sample}.sorted.bam
