@@ -12,14 +12,14 @@ include { ALIGNMENT } from '../modules/02_alignment/alignment'
 // include { SPIKEIN_ALIGNMENT } from '../modules/02_alignment/spike_in_alignment'
 include { PLOT_ALIGNMENT } from '../modules/02_alignment/plotting_alignment'
 include { MARK_DUPLICATES } from '../modules/02_alignment/mark_duplicates'
-// include { REMOVE_DUPLICATES } from '../modules/02_alignment/remove_duplicates'
 include { PLOT_QC_METRICS } from '../modules/02_alignment/plot_alignment_metrics'
-// include { PLOT_QC_METRICS as PLOT_QC_FILTERED } from '../modules/02_alignment/plot_alignment_metrics'
-// include { PLOT_QC_METRICS as PLOT_QC_FILTERED_DEDUP } from '../modules/02_alignment/plot_alignment_metrics'
-// include { FILTER_BAM as FILTER_DUP_BAM } from '../modules/03_filtering/filtering'
-// include { FILTER_BAM as FILTER_DEDUP_BAM } from '../modules/03_filtering/filtering'
-// include { MACS3 as CALLPEAK_WITH_DUPS } from '../modules/05_peak_calling/macs3'
-// include { MACS3 as CALLPEAK_DEDUP } from '../modules/05_peak_calling/macs3'
+include { PLOT_QC_FILTERED as PLOT_QC_FILTERED } from '../modules/03_filtering/plot_filtered_metrics'
+include { PLOT_QC_FILTERED as PLOT_QC_FILTERED_DEDUP } from '../modules/03_filtering/plot_filtered_metrics'
+include { FILTER_BAM as FILTER_DUP_BAM } from '../modules/03_filtering/filtering'
+include { FILTER_BAM as FILTER_DEDUP_BAM } from '../modules/03_filtering/filtering'
+// include { MACS3 as CALLPEAK_WITH_DUPS } from '../modules/04_peak_calling/macs3'
+// include { SPIKEIN_FREE } from '../modules/05_normalization/spikein_free'
+// include { DEEPTOOLS_COVERAGE } from '../modules/06_visualization/deeptools_coverage'
 
 
 workflow CUTTAG {
@@ -114,53 +114,77 @@ workflow CUTTAG {
 //        SPIKEIN_ALIGNMENT(trimmed_fastq_ch, params.spikein)
 //        PLOT_ALIGNMENT( SPIKEIN_ALIGNMENT.out.summary.collect() )        
 //    }
-//
-//    // -------------------------------------------------------------------------
-//    // PARALLEL FILTERING BRANCHES (With Duplicates vs Deduplicated)
-//    // -------------------------------------------------------------------------
-//    if (params.filtering) {
-//        def bam_marked_ch = params.alignment ? 
-//            MARK_DUPLICATES.out.bam : 
-//            samples_ch.map { sample, f1, f2 -> 
-//                def file_path = file("${params.outdir}/02_alignment/temp_picard_idxstats/${sample}/${sample}.sorted.dupMarked.bam")
-//                if ( !file_path.exists() ) { error "Missing alignment file for ${sample}" }
-//                return tuple(sample, file_path)
-//            }
-//
-//        // DUP BRANCH: Preserving Duplicating Traces (Standard practice in CUT&Tag)
-//        FILTER_DUP_BAM(bam_marked_ch, 'withDups')
-//        PLOT_QC_FILTERED(
-//            FILTER_DUP_BAM.out.picard_metrics.collect(),
-//            FILTER_DUP_BAM.out.frag_len.collect(),
-//            FILTER_DUP_BAM.out.idxstats.collect()
-//        )
-//        final_filtered_dup_bam_ch = FILTER_DUP_BAM.out.bam
-//
-//        // DEDUP BRANCH: Purging Duplicating Traces (Control/Comparative branch)
-//        REMOVE_DUPLICATES(bam_marked_ch)
-//        FILTER_DEDUP_BAM(REMOVE_DUPLICATES.out.bam, 'noDups')
-//        PLOT_QC_FILTERED_DEDUP(
-//            FILTER_DEDUP_BAM.out.picard_metrics.collect(),
-//            FILTER_DEDUP_BAM.out.frag_len.collect(),
-//            FILTER_DEDUP_BAM.out.idxstats.collect()
-//        )
-//        final_filtered_dedup_bam_ch = FILTER_DEDUP_BAM.out.bam
-//        
-//    } else {
-//        // If filtering step is skipped, populate target channels from directory parameters
-//        final_filtered_dup_bam_ch = samples_ch.map { sample, f1, f2 ->
-//            tuple(sample, file("${params.outdir}/03_filtered/withDups/${sample}.filtered.bam", checkIfExists: params.peaks))
-//        }
-//        final_filtered_dedup_bam_ch = samples_ch.map { sample, f1, f2 ->
-//            tuple(sample, file("${params.outdir}/03_filtered/noDups/${sample}.filtered.dedup.bam", checkIfExists: params.peaks))
-//        }
-//    }
-//
+
+    // -------------------------------------------------------------------------
+    // PARALLEL FILTERING BRANCHES (With Duplicates vs Deduplicated)
+    // -------------------------------------------------------------------------
+    if (params.filtering) {
+        def bam_marked_ch = params.alignment ? 
+            MARK_DUPLICATES.out.bam : 
+            samples_ch.map { sample, f1, f2, histone_mark -> 
+                def bam_path = file("${params.outdir}/02_alignment/temp_picard_idxstats/${sample}/${sample}.sorted.dupMarked.bam")
+                def bai_path = file("${params.outdir}/02_alignment/temp_picard_idxstats/${sample}/${sample}.sorted.dupMarked.bai")
+                if ( !bam_path.exists() ) { error "Missing alignment file for ${sample}" }
+                return tuple(sample, bam_path, bai_path, histone_mark)
+            }
+
+        // DUP BRANCH: Preserving Duplicating Traces (Standard practice in CUT&Tag)
+        FILTER_DUP_BAM(bam_marked_ch, 'withDups', params.blacklist_bed)
+        PLOT_QC_FILTERED(
+            FILTER_DUP_BAM.out.frag_len.collect(),
+            FILTER_DUP_BAM.out.idxstats.collect(),
+            'withDups'
+        )
+        final_filtered_dup_bam_ch = FILTER_DUP_BAM.out.bam
+
+        // DEDUP BRANCH: Purging Duplicating Traces (Control/Comparative branch)
+        FILTER_DEDUP_BAM(bam_marked_ch, 'noDups', params.blacklist_bed)
+        PLOT_QC_FILTERED_DEDUP(
+            FILTER_DEDUP_BAM.out.frag_len.collect(),
+            FILTER_DEDUP_BAM.out.idxstats.collect(),
+            'noDups'
+        )
+        final_filtered_dedup_bam_ch = FILTER_DEDUP_BAM.out.bam
+        
+    } else {
+        // If filtering step is skipped, populate target channels from directory parameters
+        final_filtered_dup_bam_ch = samples_ch.map { sample, f1, f2, histone_mark ->
+            def file_path = file("${params.outdir}/03_filtered/${histone_mark}/withDups/${sample}/${sample}.withDups.filtered.bam", checkIfExists: params.peaks)
+            return tuple(sample, file_path, 'withDups', histone_mark)
+        }
+        final_filtered_dedup_bam_ch = samples_ch.map { sample, f1, f2, histone_mark ->
+            def file_path = file("${params.outdir}/03_filtered/${histone_mark}/noDups/${sample}/${sample}.noDups.filtered.bam", checkIfExists: params.peaks)
+            return tuple(sample, file_path, 'noDups', histone_mark)        
+        }
+    }
+
 //    // -------------------------------------------------------------------------
 //    // DUAL PEAK CALLING LAYER
 //    // -------------------------------------------------------------------------
 //    if (params.peaks) {
-//        CALLPEAK_WITH_DUPS( final_filtered_dup_bam_ch, "noDup" )
-//        CALLPEAK_DEDUP( final_filtered_dedup_bam_ch, "deDup" )
+//        CALLPEAK_WITH_DUPS( final_filtered_dup_bam_ch, "noDup", "histone_mark" )
+//        CALLPEAK_WITH_DUPS( final_filtered_dup_bam_ch, "noDup", "histone_mark" )
+//        CALLPEAK_DUP( final_filtered_dedup_bam_ch, "Dup", "histone_mark" )
+//        CALLPEAK_DUP( final_filtered_dedup_bam_ch, "Dup", "histone_mark" )
 //    }
+//
+//    //-------------------------------------------------------------------------
+//    // GLOBAL NORMALIZATION FACTOR ESTIMATION (ChIPseqSpikeInFree)
+//    // -------------------------------------------------------------------------
+//     def all_filtered_bams_ch = final_filtered_dup_bam_ch.mix(final_filtered_dedup_bam_ch)
+// 
+//     if (params.normalization) {
+//         SPIKEIN_FREE( 
+//             all_filtered_bams_ch.map { sample, bam, label, histone_mark -> bam }.collect(),
+//             all_filtered_bams_ch.map { sample, bam, label, histone_mark -> tuple(sample, label, histone_mark) }.collect()
+//         )
+//         
+//         // ---------------------------------------------------------------------
+//         // QUANTITATIVE VISUALIZATION GENERATION (DeepTools)
+//         // ---------------------------------------------------------------------
+//         // Combinamos la tupla original del BAM con el archivo de factores de normalización calculados
+//         DEEPTOOLS_COVERAGE( all_filtered_bams_ch, SPIKEIN_FREE.out.scaling_factors )
+//     }
+//
+
 }
