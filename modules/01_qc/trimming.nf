@@ -2,20 +2,20 @@ nextflow.enable.dsl = 2
 
 process TRIM {
 
-    tag "$sample"
+    tag "${histone_mark}/${sample}"
     label 'qc'
 
     input:
-    tuple val(sample), path(fastq1), path(fastq2)
+    tuple val(sample), path(fastq1), path(fastq2), val(histone_mark)
 
     output:
     tuple val(sample),
+          val(histone_mark),
           path("${sample}_trimmed_R1.fastq.gz"),
           path("${sample}_trimmed_R2.fastq.gz")
 
-    publishDir "${params.outdir}/01_qc/trimmed/${sample}",
+    publishDir "${params.outdir}/01_qc/trimmed/${histone_mark}/${sample}",
           mode: 'copy'
-
 
     script:
     """

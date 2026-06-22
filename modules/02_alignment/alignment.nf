@@ -2,17 +2,17 @@ nextflow.enable.dsl = 2
 
 process ALIGNMENT {
 
-    tag "$sample"
+    tag "${histone_mark}/${sample}"
     label 'process_high' 
 
     input:
-    tuple val(sample), path(fastq1), path(fastq2)
+    tuple val(sample), path(fastq1), path(fastq2), val(histone_mark)
     path index_dir
 
     output:
-    tuple val(sample), path("${sample}.sorted.bam"), emit: bam
-    path "${sample}.sorted.bam.bai"         , emit: bai
-    path "${sample}.bowtie2.txt"            , emit: summary
+    tuple val(sample), path("${sample}.sorted.bam"), val(histone_mark), emit: bam
+    path "${sample}.sorted.bam.bai"                                   , emit: bai
+    path "${sample}.bowtie2.txt"                                      , emit: summary
 
     publishDir "${params.outdir}/02_alignment/temp_align/${sample}", mode: 'copy'
 

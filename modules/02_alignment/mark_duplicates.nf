@@ -6,14 +6,14 @@ process MARK_DUPLICATES {
     label 'process_medium'
 
     input:
-    tuple val(sample), path(bam)
+    tuple val(sample), path(bam), val(histone_mark)
 
     output:
-    tuple val(sample), path("${sample}.sorted.dupMarked.bam"), emit: bam
-    path "${sample}.sorted.dupMarked.bam.bai"                , emit: bai
-    path "${sample}_picard.rmDup.txt"                        , emit: picard_metrics
-    path "${sample}_fragmentLen.txt"                         , emit: frag_len
-    path "${sample}_idxstats.txt"                            , emit: idxstats
+    tuple val(sample), path("${sample}.sorted.dupMarked.bam"), val(histone_mark), emit: bam
+    path "${sample}.sorted.dupMarked.bam.bai"                                   , emit: bai
+    path "${sample}_picard.rmDup.txt"                                           , emit: picard_metrics
+    path "${sample}_fragmentLen.txt"                                            , emit: frag_len
+    path "${sample}_idxstats.txt"                                               , emit: idxstats
 
     publishDir "${params.outdir}/02_alignment/temp_picard_idxstats/${sample}", mode: 'copy'
 
