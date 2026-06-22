@@ -17,6 +17,7 @@ include { PLOT_QC_FILTERED as PLOT_QC_FILTERED } from '../modules/03_filtering/p
 include { PLOT_QC_FILTERED as PLOT_QC_FILTERED_DEDUP } from '../modules/03_filtering/plot_filtered_metrics'
 include { FILTER_BAM as FILTER_DUP_BAM } from '../modules/03_filtering/filtering'
 include { FILTER_BAM as FILTER_DEDUP_BAM } from '../modules/03_filtering/filtering'
+// include { MACS3 as CALLPEAK } from '../modules/04_peak_calling/macs3'
 // include { MACS3 as CALLPEAK_WITH_DUPS } from '../modules/04_peak_calling/macs3'
 // include { SPIKEIN_FREE } from '../modules/05_normalization/spikein_free'
 // include { DEEPTOOLS_COVERAGE } from '../modules/06_visualization/deeptools_coverage'
@@ -123,7 +124,7 @@ workflow CUTTAG {
             MARK_DUPLICATES.out.bam : 
             samples_ch.map { sample, f1, f2, histone_mark -> 
                 def bam_path = file("${params.outdir}/02_alignment/temp_picard_idxstats/${sample}/${sample}.sorted.dupMarked.bam")
-                def bai_path = file("${params.outdir}/02_alignment/temp_picard_idxstats/${sample}/${sample}.sorted.dupMarked.bai")
+                def bai_path = file("${params.outdir}/02_alignment/temp_picard_idxstats/${sample}/${sample}.sorted.dupMarked.bam.bai")
                 if ( !bam_path.exists() ) { error "Missing alignment file for ${sample}" }
                 return tuple(sample, bam_path, bai_path, histone_mark)
             }
@@ -162,10 +163,10 @@ workflow CUTTAG {
 //    // DUAL PEAK CALLING LAYER
 //    // -------------------------------------------------------------------------
 //    if (params.peaks) {
-//        CALLPEAK_WITH_DUPS( final_filtered_dup_bam_ch, "noDup", "histone_mark" )
-//        CALLPEAK_WITH_DUPS( final_filtered_dup_bam_ch, "noDup", "histone_mark" )
-//        CALLPEAK_DUP( final_filtered_dedup_bam_ch, "Dup", "histone_mark" )
-//        CALLPEAK_DUP( final_filtered_dedup_bam_ch, "Dup", "histone_mark" )
+//        CALLPEAK_WITH_DUPS( final_filtered_dup_bam_ch, "Dup", "histone_mark" )
+//        CALLPEAK_WITH_DUPS( final_filtered_dup_bam_ch, "Dup", "histone_mark" )
+//        CALLPEAK( final_filtered_dedup_bam_ch, "noDup", "histone_mark" )
+//        CALLPEAK( final_filtered_dedup_bam_ch, "noDup", "histone_mark" )
 //    }
 //
 //    //-------------------------------------------------------------------------

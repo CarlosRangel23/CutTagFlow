@@ -8,9 +8,25 @@ library(tidyr)
 library(ggpubr)
 library(patchwork)
 
-# 1. Discover all pipeline input files dynamically in the Nextflow execution directory
-frag_files     <- list.files(pattern = "_fragmentLen")
-idxstats_files <- list.files(pattern = "_idxstats")
+# =========================================================================
+# STEP 0: CAPTURE NEXTFLOW ARGUMENTS DYNAMICALLY
+# =========================================================================
+args <- commandArgs(trailingOnly = TRUE)
+
+label_arg <- NULL
+frag_arg  <- NULL
+idx_arg   <- NULL
+
+if ("--label" %in% args) label_arg <- args[which(args == "--label") + 1]
+if ("--frag"  %in% args) frag_arg  <- args[which(args == "--frag") + 1]
+if ("--idx"   %in% args) idx_arg   <- args[which(args == "--idx") + 1]
+
+if (is.null(frag_arg) || is.null(idx_arg) || is.null(label_arg)) {
+  stop("CRITICAL ERROR: Missing core Nextflow arguments (--label, --frag, or --idx).")
+}
+
+frag_files     <- unlist(strsplit(frag_arg, ","))
+idxstats_files <- unlist(strsplit(idx_arg, ","))
 
 # Initialize global empty data frames to accumulate structured metrics
 frag_data     <- data.frame()
@@ -20,7 +36,10 @@ idxstats_data <- data.frame()
 # STEP 1: PARSE SAMTOOLS FRAGMENT LENGTHS
 # =========================================================================
 for (f in frag_files) {
-  sample_name <- str_remove(basename(f), "_fragmentLen.*")
+  # Nextflow format: SampleName.label.fragmentLen.txt (e.g., BPES14_H3K4me3.noDups.fragmentLen.txt)
+  # Cleaning regex to extract only the original biological sample name
+  sample_name <- str_remove(basename(f), paste0("\\.", label_arg, "\\.fragmentLen\\.txt"))
+  
   name_split  <- str_split(sample_name, "_")[[1]]
   sampleid    <- name_split[1]
   histone     <- name_split[2]
@@ -41,7 +60,9 @@ for (f in frag_files) {
 # STEP 2: PARSE SAMTOOLS IDXSTATS
 # =========================================================================
 for (f in idxstats_files) {
-  sample_name <- str_remove(basename(f), "_idxstats.*")
+  # Nextflow format: SampleName.label.idxstats.txt
+  sample_name <- str_remove(basename(f), paste0("\\.", label_arg, "\\.idxstats\\.txt"))
+  
   name_split  <- str_split(sample_name, "_")[[1]]
   sampleid    <- name_split[1]
   histone     <- name_split[2]
