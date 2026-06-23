@@ -17,10 +17,13 @@ include { PLOT_QC_FILTERED as PLOT_QC_FILTERED } from '../modules/03_filtering/p
 include { PLOT_QC_FILTERED as PLOT_QC_FILTERED_DEDUP } from '../modules/03_filtering/plot_filtered_metrics'
 include { FILTER_BAM as FILTER_DUP_BAM } from '../modules/03_filtering/filtering'
 include { FILTER_BAM as FILTER_DEDUP_BAM } from '../modules/03_filtering/filtering'
-// include { MACS3 as CALLPEAK } from '../modules/04_peak_calling/macs3'
-// include { MACS3 as CALLPEAK_WITH_DUPS } from '../modules/04_peak_calling/macs3'
-// include { SPIKEIN_FREE } from '../modules/05_normalization/spikein_free'
-// include { DEEPTOOLS_COVERAGE } from '../modules/06_visualization/deeptools_coverage'
+include { MACS3 as CALLPEAK_DEDUP } from '../modules/04_peak_calling/macs3'
+include { MACS3 as CALLPEAK_WITH_DUPS } from '../modules/04_peak_calling/macs3'
+include { ADVANCED_QC as ADVANCED_QC_DEDUP } from '../modules/04_peak_calling/calculate_advanced_qc'
+include { ADVANCED_QC as ADVANCED_QC_DUP } from '../modules/04_peak_calling/calculate_advanced_qc'
+include { PLOT_GLOBAL_QC } from '../modules/04_peak_calling/plot_global_qc'
+// include { SPIKEIN_FREE } from '../modules/05_visualization/spikein_free'
+// include { DEEPTOOLS_COVERAGE } from '../modules/05_visualization/deeptools_coverage'
 
 
 workflow CUTTAG {
@@ -79,7 +82,7 @@ workflow CUTTAG {
             if ( !r1.exists() || !r2.exists() ) {
                 error "No trimmed files for ${sample} (Mark: ${histone_mark}) in results folder"            
             }
-            return tuple(sample, r1, r2) 
+            return tuple(sample, r1, r2, histone_mark) 
         }
     }
 
@@ -121,7 +124,10 @@ workflow CUTTAG {
     // -------------------------------------------------------------------------
     if (params.filtering) {
         def bam_marked_ch = params.alignment ? 
-            MARK_DUPLICATES.out.bam : 
+            MARK_DUPLICATES.out.bam.join(MARK_DUPLICATES.out.bai)
+            .map { sample, bam, histone_mark, bai ->
+                return tuple(sample, bam, bai, histone_mark) 
+            } : 
             samples_ch.map { sample, f1, f2, histone_mark -> 
                 def bam_path = file("${params.outdir}/02_alignment/temp_picard_idxstats/${sample}/${sample}.sorted.dupMarked.bam")
                 def bai_path = file("${params.outdir}/02_alignment/temp_picard_idxstats/${sample}/${sample}.sorted.dupMarked.bam.bai")
@@ -136,7 +142,12 @@ workflow CUTTAG {
             FILTER_DUP_BAM.out.idxstats.collect(),
             'withDups'
         )
+
         final_filtered_dup_bam_ch = FILTER_DUP_BAM.out.bam
+                                                  .join(FILTER_DUP_BAM.out.bai)
+                                                  .map { sample, bam, label, histone_mark, bai  ->
+                                                    return tuple(sample, bam, bai, histone_mark) 
+                                                  }
 
         // DEDUP BRANCH: Purging Duplicating Traces (Control/Comparative branch)
         FILTER_DEDUP_BAM(bam_marked_ch, 'noDups', params.blacklist_bed)
@@ -145,33 +156,75 @@ workflow CUTTAG {
             FILTER_DEDUP_BAM.out.idxstats.collect(),
             'noDups'
         )
+
         final_filtered_dedup_bam_ch = FILTER_DEDUP_BAM.out.bam
+                                                  .join(FILTER_DEDUP_BAM.out.bai)
+                                                  .map { sample, bam, label, histone_mark, bai  ->
+                                                    return tuple(sample, bam, bai, histone_mark) 
+                                                  }
         
     } else {
         // If filtering step is skipped, populate target channels from directory parameters
         final_filtered_dup_bam_ch = samples_ch.map { sample, f1, f2, histone_mark ->
-            def file_path = file("${params.outdir}/03_filtered/${histone_mark}/withDups/${sample}/${sample}.withDups.filtered.bam", checkIfExists: params.peaks)
-            return tuple(sample, file_path, 'withDups', histone_mark)
-        }
+            def bam_path = file("${params.outdir}/03_filtered/${histone_mark}/withDups/${sample}/${sample}.withDups.filtered.bam", checkIfExists: params.peaks)
+            def bai_path = file("${params.outdir}/03_filtered/${histone_mark}/withDups/${sample}/${sample}.withDups.filtered.bam.bai", checkIfExists: params.peaks)
+            return tuple(sample, bam_path, bai_path, histone_mark)        
+                }
+
         final_filtered_dedup_bam_ch = samples_ch.map { sample, f1, f2, histone_mark ->
-            def file_path = file("${params.outdir}/03_filtered/${histone_mark}/noDups/${sample}/${sample}.noDups.filtered.bam", checkIfExists: params.peaks)
-            return tuple(sample, file_path, 'noDups', histone_mark)        
-        }
+            def bam_path = file("${params.outdir}/03_filtered/${histone_mark}/noDups/${sample}/${sample}.noDups.filtered.bam", checkIfExists: params.peaks)
+            def bai_path = file("${params.outdir}/03_filtered/${histone_mark}/noDups/${sample}/${sample}.noDups.filtered.bam.bai", checkIfExists: params.peaks)
+            return tuple(sample, bam_path, bai_path, histone_mark)      
+                }
     }
 
-//    // -------------------------------------------------------------------------
-//    // DUAL PEAK CALLING LAYER
-//    // -------------------------------------------------------------------------
-//    if (params.peaks) {
-//        CALLPEAK_WITH_DUPS( final_filtered_dup_bam_ch, "Dup", "histone_mark" )
-//        CALLPEAK_WITH_DUPS( final_filtered_dup_bam_ch, "Dup", "histone_mark" )
-//        CALLPEAK( final_filtered_dedup_bam_ch, "noDup", "histone_mark" )
-//        CALLPEAK( final_filtered_dedup_bam_ch, "noDup", "histone_mark" )
-//    }
-//
-//    //-------------------------------------------------------------------------
-//    // GLOBAL NORMALIZATION FACTOR ESTIMATION (ChIPseqSpikeInFree)
-//    // -------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // DUAL PEAK CALLING LAYER
+    // -------------------------------------------------------------------------
+    if (params.peaks) {
+        CALLPEAK_WITH_DUPS(final_filtered_dup_bam_ch, "withDups", params.genome_size)
+        CALLPEAK_DEDUP(final_filtered_dedup_bam_ch, "noDups", params.genome_size)
+    
+
+        // -------------------------------------------------------------------------
+        // ADVANCED QC
+        // -------------------------------------------------------------------------
+
+        dup_qc_input_ch = final_filtered_dup_bam_ch.join(CALLPEAK_WITH_DUPS.out.peak_file)
+                                                   .map { sample, bam, bai, histone_mark, histone_mark_rep, peak ->
+                                                   return tuple(sample, histone_mark, bam, bai, peak) }
+    
+        dedup_qc_input_ch = final_filtered_dedup_bam_ch.join(CALLPEAK_DEDUP.out.peak_file)
+                                                       .map { sample, bam, bai, histone_mark, histone_mark_rep, peak_file ->
+                                                       return tuple(sample, histone_mark, bam, bai, peak) }
+
+        FRIP_SCORE_DUP(dup_inputs_ch, "withDups", params.tss_bed, params.genome_sizes)
+        TSSE_DUP(dup_inputs_ch, "withDups")
+
+        FRIP_SCORE_DEDUP(dedup_inputs_ch, "noDups", params.tss_bed, params.genome_sizes)
+        TSSE_DEDUP(dedup_inputs_ch, "noDups")
+
+        dup_metrics_ch = FRIP_SCORE_DUP.out.metrics_csv
+                                       .join(TSSE_DUP.out.tsse_csv, by: [0, 2])
+        
+        dedup_metrics_ch = FRIP_SCORE_DEDUP.out.metrics_csv
+                                           .join(TSSE_DEDUP.out.tsse_csv, by: [0, 2])
+
+        all_qc_files_ch = dup_metrics_ch.mix(dedup_metrics_ch)
+                                        .flatMap { sample, mark, label, frip_csv, tsse_csv -> [frip_csv, tsse_csv] }
+                                        .collect()
+
+        all_cutoffs_ch = CALLPEAK_WITH_DUPS.out.summary
+                                               .mix(CALLPEAK_DEDUP.out.summary)
+                                               .collect()
+    
+        PLOT_GLOBAL_QC(all_metrics_csvs_ch, all_cutoffs_ch)    
+
+    }
+
+    //-------------------------------------------------------------------------
+    // GLOBAL NORMALIZATION FACTOR ESTIMATION (ChIPseqSpikeInFree)
+    // -------------------------------------------------------------------------
 //     def all_filtered_bams_ch = final_filtered_dup_bam_ch.mix(final_filtered_dedup_bam_ch)
 // 
 //     if (params.normalization) {
