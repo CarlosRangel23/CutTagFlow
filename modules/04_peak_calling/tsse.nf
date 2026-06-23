@@ -11,11 +11,13 @@ process TSSE {
     output:
     tuple val(sample), val(histone_mark), val(label), path("${sample}.${label}.tsse.csv"), emit: tsse_csv
 
+    publishDir "${params.outdir}/04_peak_calling/${label}/${histone_mark}/TSSE", mode: 'copy'
+    
     script:
     """
     #!/usr/bin/env Rscript
 
-    # 1. Load strictly necessary libraries
+    # 1. Load libraries
     suppressPackageStartupMessages({
       library(ATACseqQC)
       library(Rsamtools)
@@ -57,5 +59,9 @@ process TSSE {
     )
 
     write.csv(tsse_data, file = "${sample}.${label}.tsse.csv", row.names = FALSE)
+
+    # 8. Clean up heavy intermediate BAM files from the work directory
+    file.remove(shiftedBamfile)
+    file.remove(paste0(shiftedBamfile, ".bai"))
     """
 }

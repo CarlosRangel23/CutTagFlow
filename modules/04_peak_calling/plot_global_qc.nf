@@ -16,6 +16,8 @@ process PLOT_GLOBAL_QC {
     path "MACS3_cutoff_peaks_impact.png" , emit: cutoff_plot
     path "Experiment_QC_Summary.csv"     , emit: final_table
 
+    publishDir "${params.outdir}/04_peak_calling/Advanced_QC", mode: 'copy'
+
     script:
     """
     plot_advanced.qc.R

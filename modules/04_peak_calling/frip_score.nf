@@ -34,8 +34,8 @@ process FRIP_SCORE {
 
     # 4. Perform arithmetic directly in Bash using bc
     if [ "\$total_reads" -gt 0 ]; then
-        frip_tss=\$(echo "scale=6; \$reads_tss / \$total_reads" | bc -l)
-        frip_peaks=\$(echo "scale=6; \$reads_peaks / \$total_reads" | bc -l)
+        frip_tss=\$(awk "BEGIN {print \$reads_tss / \$total_reads}")
+        frip_peaks=\$(awk "BEGIN {print \$reads_peaks / \$total_reads}")
     else
         frip_tss=0
         frip_peaks=0
