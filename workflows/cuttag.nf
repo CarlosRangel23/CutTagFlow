@@ -193,11 +193,11 @@ workflow CUTTAG {
         // -------------------------------------------------------------------------
 
         dup_qc_input_ch = final_filtered_dup_bam_ch.join(CALLPEAK_WITH_DUPS.out.peak_file)
-                                                   .map { sample, bam, bai, histone_mark, histone_mark_rep, peak_file ->
+                                                   .map { sample, bam, bai, histone_mark, histone_mark_rep, peak ->
                                                    return tuple(sample, histone_mark, bam, bai, peak) }
     
         dedup_qc_input_ch = final_filtered_dedup_bam_ch.join(CALLPEAK_DEDUP.out.peak_file)
-                                                       .map { sample, bam, bai, histone_mark, histone_mark_rep, peak_file ->
+                                                       .map { sample, bam, bai, histone_mark, histone_mark_rep, peak ->
                                                        return tuple(sample, histone_mark, bam, bai, peak) }
 
         FRIP_SCORE_DUP(dup_qc_input_ch, "withDups", params.tss_bed, params.chr_sizes)
