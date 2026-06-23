@@ -1,5 +1,5 @@
 nextflow.enable.dsl = 2
 
-process PLOT_GLOBAL_QC {
+process TSSE {
 
 }
