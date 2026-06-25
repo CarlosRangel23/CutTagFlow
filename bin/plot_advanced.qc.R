@@ -1,116 +1,231 @@
 #!/usr/bin/env Rscript
 
-# =========================================================================
-# 1. LOAD VISUALIZATION LIBRARIES
-# =========================================================================
-suppressPackageStartupMessages({
-  library(ggplot2)
-  library(dplyr)
-  library(purrr)
-  library(tidyr)
-  library(ggpubr)
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# ----------------------------------------------------------------
+# PARSE COMMAND LINE ARGUMENTS
+# ----------------------------------------------------------------
+args <- commandArgs(trailingOnly = TRUE)
+
+# Find the indices where our flags are declared
+frip_flag_idx   <- which(args == "--frip")
+cutoff_flag_idx <- which(args == "--cutoffs")
+
+if (length(frip_flag_idx) == 0 || length(cutoff_flag_idx) == 0) {
+  stop("Missing parameters. Usage: plot_advanced.qc.R --frip [files...] --cutoffs [files...]")
+}
+
+# Extract file paths sandwiched between flags or until the end of args array
+if (frip_flag_idx < cutoff_flag_idx) {
+  frip_paths   <- args[(frip_flag_idx + 1):(cutoff_flag_idx - 1)]
+  cutoff_paths <- args[(cutoff_flag_idx + 1):length(args)]
+} else {
+  cutoff_paths <- args[(cutoff_flag_idx + 1):(frip_flag_idx - 1)]
+  frip_paths   <- args[(frip_flag_idx + 1):length(args)]
+}
+
+# ----------------------------------------------------------------
+# 1. READ AND PREPARE FRiP DATA 
+# ----------------------------------------------------------------
+if (length(frip_paths) == 0) stop("No FRiP files were passed to the script.")
+
+frip_list <- lapply(frip_paths, read.csv)
+frip_all  <- do.call(rbind, frip_list)
+
+# Coerce structural columns to factors and standardize names cleanly
+frip_all <- frip_all %>%
+  mutate(
+    sample       = as.character(sample),
+    histone_mark = as.character(histone_mark),
+    label        = case_when(
+      grepl("noDups", label)   ~ "Deduplicated",
+      grepl("withDups", label) ~ "Duplicated",
+      TRUE                     ~ "Unknown"
+    )
+  )
+
+frip_all$label        <- as.factor(frip_all$label)
+frip_all$histone_mark <- as.factor(frip_all$histone_mark)
+
+# --- AUTOMATIC SAMPLE CLEANING ---
+frip_all <- frip_all %>%
+  mutate(sample_clean = mapply(function(s, m) {
+    gsub(paste0("_", m), "", s)
+  }, sample, histone_mark)) %>%
+  mutate(sample_clean = as.factor(sample_clean))
+
+# ----------------------------------------------------------------
+# 2. READ AND PREPARE CUTOFF FILES 
+# ----------------------------------------------------------------
+if (length(cutoff_paths) == 0) stop("No cutoff summary files were passed to the script.")
+
+cutoff_list <- lapply(cutoff_paths, function(path) {
+  filename <- basename(path) # Ej: "BPES2_H3K27Ac.withDups_cutoff_analysis.txt"
+  
+  label_val <- "Unknown"
+  if (grepl("withDups", filename)) label_val <- "Duplicated"
+  if (grepl("noDups", filename))   label_val <- "Deduplicated"
+  
+  mark_val <- "Unknown"
+  if (grepl("H3K27Ac", filename))   mark_val <- "H3K27Ac"
+  if (grepl("H3K4me3", filename))   mark_val <- "H3K4me3"
+  if (grepl("H3K27me3", filename))  mark_val <- "H3K27me3"
+  if (grepl("H3K9me3", filename))   mark_val <- "H3K9me3"
+  if (grepl("H3K36me3", filename))  mark_val <- "H3K36me3"
+  if (grepl("H3K4me1", filename))   mark_val <- "H3K4me1"
+  if (grepl("H3K4me2", filename))   mark_val <- "H3K4me2"
+  
+  sample_clean_val <- gsub(paste0("_", mark_val, ".*"), "", filename)
+  
+  df <- read.table(path, header = TRUE, comment.char = "#")
+  df$sample_clean <- sample_clean_val
+  df$label        <- label_val
+  df$histone_mark <- mark_val
+  
+  return(df)
 })
 
-# =========================================================================
-# 2. CONSOLIDATE FRIP AND TSSE METRICS
-# =========================================================================
-message("[GLOBAL QC] Gathering and merging all per-sample CSV files...")
+cutoff_all <- do.call(rbind, cutoff_list)
 
-frip_files <- list.files(pattern = "\\\\.frip\\\\.csv$")
-tsse_files <- list.files(pattern = "\\\\.tsse\\\\.csv$")
+# ----------------------------------------------------------------
+# COLOR PALETTE HELPERS (Shared across blocks)
+# ----------------------------------------------------------------
+metric_colors <- c("frip_peaks" = "#2c3e50", "frip_tss_2kb" = "#16a085")
+metric_labels <- c("frip_peaks" = "FRiP Peaks", "frip_tss_2kb" = "FRiP TSS (2kb)")
 
-if (length(frip_files) == 0 || length(tsse_files) == 0) {
-  stop("CRITICAL ERROR: No .frip.csv or .tsse.csv files found in the working directory.")
-}
+# ----------------------------------------------------------------
+# BLOCK 0: FULLY AUTOMATED SUBplots (Faceted & Sorted dynamically)
+# ----------------------------------------------------------------
+available_marks  <- unique(frip_all$histone_mark)
+available_labels <- unique(frip_all$label)
 
-# Read and bind tables natively
-df_frip <- frip_files %>% map_df(~read.csv(.x))
-df_tsse <- tsse_files %>% map_df(~read.csv(.x))
-
-# Master join: combine FRiP and TSSE data into a single long table
-df_global <- full_join(df_frip, df_tsse, by = c("sample", "histone_mark", "label"))
-
-# Export the absolute complete master table of the experiment
-write.csv(df_global, "Experiment_QC_Summary.csv", row.names = FALSE)
-
-# =========================================================================
-# 3. GENERATE THE PLOTS
-# =========================================================================
-message("[GLOBAL QC] Generating comparative plots...")
-
-# Theme template for clean aesthetics
-pipeline_theme <- theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        strip.background = element_rect(fill = "#f2f2f2"),
-        panel.grid.minor = element_blank())
-
-# Plot 1: FRiP in Peaks
-p1 <- ggplot(df_global, aes(x = histone_mark, y = frip_peaks, fill = label)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.7) +
-  geom_jitter(position = position_jitterdodge(jitter.width = 0.1), size = 1.5, alpha = 0.6) +
-  labs(title = "Fraction of Reads in Peaks (FRiP)", x = "Histone Mark", y = "FRiP Score", fill = "Condition") +
-  scale_fill_manual(values = c("withDups" = "#e41a1c", "noDups" = "#377eb8")) +
-  pipeline_theme
-ggsave("FRiP_peaks_comparison.png", plot = p1, width = 7, height = 5, dpi = 300)
-
-# Plot 2: FRiP in TSS 2kb regions
-p2 <- ggplot(df_global, aes(x = histone_mark, y = frip_tss_2kb, fill = label)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.7) +
-  geom_jitter(position = position_jitterdodge(jitter.width = 0.1), size = 1.5, alpha = 0.6) +
-  labs(title = "FRiP around TSS (±2 kb)", x = "Histone Mark", y = "FRiP TSS Score", fill = "Condition") +
-  scale_fill_manual(values = c("withDups" = "#e41a1c", "noDups" = "#377eb8")) +
-  pipeline_theme
-ggsave("FRiP_TSS_comparison.png", plot = p2, width = 7, height = 5, dpi = 300)
-
-# Plot 3: TSSE Scores
-p3 <- ggplot(df_global, aes(x = histone_mark, y = tsse_score, fill = label)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.7) +
-  geom_jitter(position = position_jitterdodge(jitter.width = 0.1), size = 1.5, alpha = 0.6) +
-  labs(title = "TSS Enrichment Score (TSSE)", x = "Histone Mark", y = "TSSE Value", fill = "Condition") +
-  scale_fill_manual(values = c("withDups" = "#e41a1c", "noDups" = "#377eb8")) +
-  pipeline_theme
-ggsave("TSSE_scores_comparison.png", plot = p3, width = 7, height = 5, dpi = 300)
-
-# =========================================================================
-# 4. PARSE MACS3 CUTOFF ANALYSIS LOGS
-# =========================================================================
-message("[GLOBAL QC] Parsing MACS3 cutoff analysis logs...")
-
-cutoff_files_list <- list.files(pattern = "_cutoff_analysis\\\\.txt$")
-
-if (length(cutoff_files_list) > 0) {
-  df_cutoff_master <- cutoff_files_list %>% map_df(function(f) {
-    clean_name <- gsub("_cutoff_analysis\\\\.txt", "", f)
-    name_parts <- unlist(strsplit(clean_name, "\\\\."))
-    s_id  <- name_parts[1]
-    lbl   <- name_parts[2]
+for (mark in available_marks) {
+  for (lbl in available_labels) {
     
-    lines <- readLines(f, warn = FALSE)
-    data_lines <- lines[!grepl("^#", lines)]
-    if(length(data_lines) > 1) {
-      dt <- read.table(text = data_lines, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-      dt$sample <- s_id
-      dt$label  <- lbl
-      return(dt)
-    }
-    return(NULL)
-  })
-
-  if (nrow(df_cutoff_master) > 0) {
-    score_col <- colnames(df_cutoff_master)[1]
+    df_sub <- frip_all %>% 
+      filter(histone_mark == mark & label == lbl) %>%
+      pivot_longer(cols = c(frip_peaks, frip_tss_2kb), names_to = "metric", values_to = "score") %>%
+      mutate(sample_order = reorder(sample_clean, -score * (metric == "frip_peaks")))
     
-    p4 <- ggplot(df_cutoff_master, aes_string(x = score_col, y = "npeaks", color = "label", group = "interaction(sample, label)")) +
-      geom_line(alpha = 0.5, size = 0.8) +
-      labs(title = "MACS3 Cutoff Score Impact on Peak Calling", x = paste("Cutoff Score Threshold (", score_col, ")"), y = "Number of Called Peaks", color = "Condition") +
-      scale_color_manual(values = c("withDups" = "#e41a1c", "noDups" = "#377eb8")) +
-      facet_wrap(~sample, scales = "free_y") +
-      theme_bw() +
-      theme(strip.background = element_rect(fill = "#f2f2f2"))
-      
-    ggsave("MACS3_cutoff_peaks_impact.png", plot = p4, width = 10, height = 6, dpi = 300)
+    if (nrow(df_sub) == 0) next
+    
+    p_sub <- ggplot(df_sub, aes(x = sample_order, y = score, fill = metric)) +
+      geom_bar(stat = "identity", position = "dodge", alpha = 0.9) +
+      theme_minimal() +
+      scale_fill_manual(values = metric_colors, labels = metric_labels) +
+      labs(title = paste(mark, "FRiP Metrics (", lbl, ")"), 
+           x = "Sample", y = "FRiP Score") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+            legend.position = "bottom", 
+            legend.title = element_blank())
+    
+    file_name_sub <- paste0("FRiPs_", mark, "_", lbl, ".png")
+    ggsave(file_name_sub, plot = p_sub, width = 6, height = 5, dpi = 150)
   }
-} else {
-  message("[GLOBAL QC] WARNING: No MACS3 cutoff analysis files found to plot.")
 }
 
-message("[GLOBAL QC] All comparison charts successfully exported!")
+# ----------------------------------------------------------------
+# PLOT 1: Multi-metric Faceted Comparison per Histone Mark
+# ----------------------------------------------------------------
+for (mark in available_marks) {
+  
+  df_mark <- frip_all %>%
+    filter(histone_mark == mark) %>%
+    pivot_longer(cols = c(frip_peaks, frip_tss_2kb), 
+                 names_to = "metric", 
+                 values_to = "score") %>%
+    mutate(sample_order = reorder(sample_clean, -score * (metric == "frip_peaks")))
+  
+  p_bars <- ggplot(df_mark, aes(x = sample_order, y = score, fill = metric)) +
+    geom_bar(stat = "identity", position = "dodge", alpha = 0.9) +
+    facet_wrap(~ label, scales = "free_x") + 
+    theme_minimal() +
+    labs(
+      title = paste("FRiP Metrics for", mark),
+      x = "Sample", 
+      y = "Proportion Score"
+    ) +
+    scale_fill_manual(values = metric_colors, labels = metric_labels) +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+      strip.text = element_text(face = "bold", size = 12),
+      legend.position = "bottom",
+      legend.title = element_blank()
+    )
+  
+  file_name_p1 <- paste0("FRiP_comparison_", mark, ".png")
+  ggsave(file_name_p1, plot = p_bars, width = 9, height = 6, dpi = 150)
+}
+
+# ----------------------------------------------------------------
+# PLOT 2: Boxplot comparing label (Dups vs noDups) split by Mark
+# ----------------------------------------------------------------
+p2 <- ggplot(frip_all, aes(x = label, y = frip_peaks, fill = label)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) +
+  geom_jitter(width = 0.1, size = 2, aes(color = label)) +
+  facet_wrap(~ histone_mark) +
+  theme_bw() +
+  labs(title = "FRiP Peaks Distribution: Duplicated vs Deduplicated",
+       x = "Condition", y = "FRiP Peaks Score") +
+  scale_fill_manual(values = c(
+    "Duplicated"   = "#3498db", 
+    "Deduplicated" = "#e74c3c"
+  )) +
+  scale_color_manual(values = c(
+    "Duplicated"   = "#2980b9", 
+    "Deduplicated" = "#c0392b"
+  )) + 
+  theme(
+    legend.position = "none",
+    strip.text = element_text(face = "bold", size = 12),
+    axis.text.x = element_text(size = 11)
+  )
+
+ggsave("FRiP_boxplot.png", plot = p2, width = 8, height = 6, dpi = 150)
+
+# ----------------------------------------------------------------
+# PLOT 3: MACS3 Cutoff Impact Curve (Filtered by qscore >= 1)
+# ----------------------------------------------------------------
+cutoff_filtered <- cutoff_all %>%
+  filter(qscore >= 1)
+
+p3 <- ggplot(cutoff_filtered, aes(x = qscore, y = npeaks, group = interaction(sample_clean, label), color = label)) +
+  geom_line(alpha = 0.7, size = 1) +
+  facet_wrap(~ histone_mark, scales = "free_y") +
+  theme_minimal() +
+  labs(title = "MACS3 Cutoff Plot",
+       subtitle = "Displaying high-confidence thresholds (qscore >= 1)",
+       x = "Significance Threshold (qscore)", y = "Total Peaks (npeaks)") +
+  scale_color_manual(values = c(
+    "Duplicated"   = "#2980b9", 
+    "Deduplicated" = "#c0392b"
+  )) + 
+  geom_vline(
+    xintercept = 5,
+    linetype = "dashed",
+    color = "grey40"
+  ) +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    strip.text = element_text(face = "bold", size = 12)
+  )
+
+ggsave("MACS3_cutoff_peaks_impact_filtered.png", plot = p3, width = 9, height = 6, dpi = 150)
+
+# ----------------------------------------------------------------
+# 4. GLOBAL SYNTHESIS TABLE (.CSV)
+# ----------------------------------------------------------------
+table_dups <- frip_all %>% 
+  filter(label == "Duplicated") %>% 
+  select(sample = sample_clean, histone_mark, total_reads_withDups = total_reads, frip_tss_2kb_withDups = frip_tss_2kb, frip_peaks_withDups = frip_peaks)
+
+table_nodups <- frip_all %>% 
+  filter(label == "Deduplicated") %>% 
+  select(sample = sample_clean, histone_mark, total_reads_noDups = total_reads, frip_tss_2kb_noDups = frip_tss_2kb, frip_peaks_noDups = frip_peaks)
+
+final_table <- full_join(table_dups, table_nodups, by = c("sample", "histone_mark"))
+write.csv(final_table, "Experiment_QC_Summary.csv", row.names = FALSE)

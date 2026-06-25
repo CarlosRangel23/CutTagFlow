@@ -21,8 +21,6 @@ include { MACS3 as CALLPEAK_DEDUP } from '../modules/04_peak_calling/macs3'
 include { MACS3 as CALLPEAK_WITH_DUPS } from '../modules/04_peak_calling/macs3'
 include { FRIP_SCORE as FRIP_SCORE_DUP } from '../modules/04_peak_calling/frip_score'
 include { FRIP_SCORE as FRIP_SCORE_DEDUP } from '../modules/04_peak_calling/frip_score'
-include { TSSE as TSSE_DUP } from '../modules/04_peak_calling/tsse'
-include { TSSE as TSSE_DEDUP } from '../modules/04_peak_calling/tsse'
 // include { PLOT_GLOBAL_QC } from '../modules/04_peak_calling/plot_global_qc'
 // include { SPIKEIN_FREE } from '../modules/05_visualization/spikein_free'
 // include { DEEPTOOLS_COVERAGE } from '../modules/05_visualization/deeptools_coverage'
@@ -200,27 +198,16 @@ workflow CUTTAG {
                                                        .map { sample, bam, bai, histone_mark, histone_mark_rep, peak ->
                                                        return tuple(sample, histone_mark, bam, bai, peak) }
 
-        FRIP_SCORE_DUP(dup_qc_input_ch, "withDups", params.tss_bed, params.chr_sizes)
-        TSSE_DUP(dup_qc_input_ch, "withDups")
+        all_qc_files_ch = FRIP_SCORE_DUP.out.metrics_csv
+                                .mix(FRIP_SCORE_DEDUP.out.metrics_csv)
+                                .flatMap { sample, mark, label, frip_csv -> [frip_csv] }
+                                .collect()
 
-        FRIP_SCORE_DEDUP(dedup_qc_input_ch, "noDups", params.tss_bed, params.chr_sizes)
-        TSSE_DEDUP(dedup_qc_input_ch, "noDups")
+        all_cutoffs_ch = CALLPEAK_WITH_DUPS.out.summary
+                                           .mix(CALLPEAK_DEDUP.out.summary)
+                                           .collect()
 
-//        dup_metrics_ch = FRIP_SCORE_DUP.out.metrics_csv
-//                                       .join(TSSE_DUP.out.tsse_csv, by: [0, 2])
-//        
-//        dedup_metrics_ch = FRIP_SCORE_DEDUP.out.metrics_csv
-//                                           .join(TSSE_DEDUP.out.tsse_csv, by: [0, 2])
-//
-//        all_qc_files_ch = dup_metrics_ch.mix(dedup_metrics_ch)
-//                                        .flatMap { sample, mark, label, frip_csv, tsse_csv -> [frip_csv, tsse_csv] }
-//                                        .collect()
-//
-//        all_cutoffs_ch = CALLPEAK_WITH_DUPS.out.summary
-//                                               .mix(CALLPEAK_DEDUP.out.summary)
-//                                               .collect()
-//    
-//        PLOT_GLOBAL_QC(all_metrics_csvs_ch, all_cutoffs_ch)    
+        PLOT_GLOBAL_QC(all_qc_files_ch, all_cutoffs_ch)    
 
     }
 
