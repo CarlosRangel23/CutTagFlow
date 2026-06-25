@@ -21,7 +21,7 @@ include { MACS3 as CALLPEAK_DEDUP } from '../modules/04_peak_calling/macs3'
 include { MACS3 as CALLPEAK_WITH_DUPS } from '../modules/04_peak_calling/macs3'
 include { FRIP_SCORE as FRIP_SCORE_DUP } from '../modules/04_peak_calling/frip_score'
 include { FRIP_SCORE as FRIP_SCORE_DEDUP } from '../modules/04_peak_calling/frip_score'
-// include { PLOT_GLOBAL_QC } from '../modules/04_peak_calling/plot_global_qc'
+include { PLOT_GLOBAL_QC } from '../modules/04_peak_calling/plot_global_qc'
 // include { SPIKEIN_FREE } from '../modules/05_visualization/spikein_free'
 // include { DEEPTOOLS_COVERAGE } from '../modules/05_visualization/deeptools_coverage'
 
@@ -198,6 +198,9 @@ workflow CUTTAG {
                                                        .map { sample, bam, bai, histone_mark, histone_mark_rep, peak ->
                                                        return tuple(sample, histone_mark, bam, bai, peak) }
 
+        FRIP_SCORE_DUP(dup_qc_input_ch,"withDups", params.tss_bed, params.chr_sizes)
+        FRIP_SCORE_DEDUP(dedup_qc_input_ch,"noDups", params.tss_bed, params.chr_sizes)
+
         all_qc_files_ch = FRIP_SCORE_DUP.out.metrics_csv
                                 .mix(FRIP_SCORE_DEDUP.out.metrics_csv)
                                 .flatMap { sample, mark, label, frip_csv -> [frip_csv] }
@@ -208,7 +211,6 @@ workflow CUTTAG {
                                            .collect()
 
         PLOT_GLOBAL_QC(all_qc_files_ch, all_cutoffs_ch)    
-
     }
 
     //-------------------------------------------------------------------------

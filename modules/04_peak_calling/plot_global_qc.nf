@@ -10,7 +10,7 @@ process PLOT_GLOBAL_QC {
     path cutoff_files    
 
     output:
-    path "plot_0_*.png"                            , emit: block0_individual_plots
+    path "FRiPs_*.png"                             , emit: frip_individual_plots
     path "FRiP_comparison_*.png"                   , emit: frip_faceted_plots
     path "FRiP_boxplot.png"                        , emit: frip_boxplot
     path "MACS3_cutoff_peaks_impact_filtered.png"  , emit: cutoff_filtered_plot

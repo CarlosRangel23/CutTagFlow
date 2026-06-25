@@ -4,6 +4,7 @@
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+library(patchwork)
 
 # ----------------------------------------------------------------
 # PARSE COMMAND LINE ARGUMENTS
@@ -128,38 +129,57 @@ for (mark in available_marks) {
 }
 
 # ----------------------------------------------------------------
-# PLOT 1: Multi-metric Faceted Comparison per Histone Mark
+# PLOT 1: Multi-metric Comparison per Histone Mark
 # ----------------------------------------------------------------
+
 for (mark in available_marks) {
   
-  df_mark <- frip_all %>%
-    filter(histone_mark == mark) %>%
-    pivot_longer(cols = c(frip_peaks, frip_tss_2kb), 
-                 names_to = "metric", 
-                 values_to = "score") %>%
+  df_dedup <- frip_all %>%
+    filter(histone_mark == mark & label == "Deduplicated") %>%
+    pivot_longer(cols = c(frip_peaks, frip_tss_2kb), names_to = "metric", values_to = "score") %>%
     mutate(sample_order = reorder(sample_clean, -score * (metric == "frip_peaks")))
   
-  p_bars <- ggplot(df_mark, aes(x = sample_order, y = score, fill = metric)) +
+  p_dedup <- ggplot(df_dedup, aes(x = sample_order, y = score, fill = metric)) +
     geom_bar(stat = "identity", position = "dodge", alpha = 0.9) +
-    facet_wrap(~ label, scales = "free_x") + 
     theme_minimal() +
-    labs(
-      title = paste("FRiP Metrics for", mark),
-      x = "Sample", 
-      y = "Proportion Score"
-    ) +
     scale_fill_manual(values = metric_colors, labels = metric_labels) +
+    labs(x = "Sample", y = "Proportion Score", title = "Deduplicated") +
     theme(
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
-      strip.text = element_text(face = "bold", size = 12),
-      legend.position = "bottom",
-      legend.title = element_blank()
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 9),
+      plot.title = element_text(face = "bold", hjust = 0.5, size = 12),
+      legend.position = "none"
     )
   
+  df_dup <- frip_all %>%
+    filter(histone_mark == mark & label == "Duplicated") %>%
+    pivot_longer(cols = c(frip_peaks, frip_tss_2kb), names_to = "metric", values_to = "score") %>%
+    mutate(sample_order = reorder(sample_clean, -score * (metric == "frip_peaks")))
+  
+  p_dup <- ggplot(df_dup, aes(x = sample_order, y = score, fill = metric)) +
+    geom_bar(stat = "identity", position = "dodge", alpha = 0.9) +
+    theme_minimal() +
+    scale_fill_manual(values = metric_colors, labels = metric_labels) +
+    labs(x = "Sample", y = NULL, title = "Duplicated") + 
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 9),
+      plot.title = element_text(face = "bold", hjust = 0.5, size = 12),
+      axis.text.y = element_blank(), # Ocultamos los números del eje Y en la derecha
+      axis.title.y = element_blank(),
+      legend.position = "none"
+    )
+  
+  p_combined <- (p_dedup + p_dup) + 
+    plot_layout(guides = "collect") & 
+    theme(legend.position = "bottom", legend.title = element_blank())
+  
+  p_combined <- p_combined + plot_annotation(
+    title = paste("FRiP Metrics for", mark),
+    theme = theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5))
+  )
+  
   file_name_p1 <- paste0("FRiP_comparison_", mark, ".png")
-  ggsave(file_name_p1, plot = p_bars, width = 9, height = 6, dpi = 150)
+  ggsave(file_name_p1, plot = p_combined, width = 12, height = 6, dpi = 150)
 }
-
 # ----------------------------------------------------------------
 # PLOT 2: Boxplot comparing label (Dups vs noDups) split by Mark
 # ----------------------------------------------------------------
@@ -228,4 +248,4 @@ table_nodups <- frip_all %>%
   select(sample = sample_clean, histone_mark, total_reads_noDups = total_reads, frip_tss_2kb_noDups = frip_tss_2kb, frip_peaks_noDups = frip_peaks)
 
 final_table <- full_join(table_dups, table_nodups, by = c("sample", "histone_mark"))
-write.csv(final_table, "Experiment_QC_Summary.csv", row.names = FALSE)
+write.csv(final_table, "Experiment_QC_Summary.csv", row.names = FALSE, quote = FALSE)
