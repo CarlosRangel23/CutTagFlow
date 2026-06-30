@@ -31,7 +31,7 @@ Support for local environments may be added in future versions.
 CutTagFlow does not require a traditional installation. You can simply clone the repository:
 
 ```bash
-git clone https://github.com/your_username/CutTagFlow.git
+git clone https://github.com/CarlosRangel23/CutTagFlow.git
 cd CutTagFlow
 ```
 
@@ -41,24 +41,27 @@ cd CutTagFlow
 * Singularity or Apptainer (recommended for HPC environments)
 
 
-## Usage
-### Input data format
+## Input data format
 
-Input samples must be specified in a samplesheet following the format defined in (data/example_samplesheet.csv)[https://github.com/CarlosRangel23/CutTagFlow/blob/main/data/example_samplesheet.csv]
+Input samples must be specified in a samplesheet following the format defined in [data/example_samplesheet.csv](https://github.com/CarlosRangel23/CutTagFlow/blob/main/data/example_samplesheet.csv)
 
 ### Required columns
-
-* The **`sample` column must follow the format**:
-  ```
-  sampleName_histoneMark
-  ```
-* The `histone_mark` column must match the corresponding modification.
-
 The samplesheet must contain the following columns:
 
 ```
 sample,fastq1,fastq2,histone_mark
 ```
+
+
+* The **`sample` column must follow the format**:
+  ```
+  sampleName_histoneMark
+  ```
+
+* The `fastq1` column must contain path to r1 file.
+* The `fastq2` column must contain path to r2 file.
+* The `histone_mark` column must match the corresponding modification.
+
 
 ### Example
 
@@ -70,8 +73,8 @@ BPES4_H3K27Ac,/path/to/file_r1.fastq.gz,/path/to/file_r2.fastq.gz,H3K27Ac
 BPES4_H3K4me3,/path/to/file_r1.fastq.gz,/path/to/file_r2.fastq.gz,H3K4me3
 ```
 
-## Running
-Before running, load Nextflow:
+## Usage
+Before running, load Nextflow in your HPC cluster. Be aware that your cluster may have some guidance or specific rules for using Nextflow.
 
 ```bash
 module load apps/binapps/nextflow/25.10.4
@@ -83,35 +86,95 @@ module load apps/binapps/nextflow/25.10.4
 nextflow run main.nf --samplesheet data/example_samplesheet.csv [options]
 ```
 
-
-### Parameters
-
-The pipeline is structured into two main stages:
-
-* **First steps**: preprocessing and alignment
-* **Second steps**: downstream analysis
-
 ### Available parameters
 
-* **fastqc**
-* **trim**
-* **fastqc_trim**
-* **alignment**
-* **filtering**
-* **peaks**
-* **diffbind**
-* **coverage**
+#### First steps (preprocessing and alignment)
 
-***
+- **fastqc**  
+  Runs quality control on raw FASTQ files using FastQC. Runs also MultiQC.
 
-## Suggested improvement
+- **trim**  
+  Performs adapter and quality trimming of raw reads.
 
-You can simplify execution by adding a global parameter:
+- **fastqc_trim**  
+  Runs FastQC again after trimming to assess read quality improvement. Runs also MultiQC.
+
+- **alignment**  
+  Aligns reads to the reference genome and generates BAM files using bowtie2.
+
+---
+
+#### Second steps (downstream analysis)
+
+- **filtering**  
+  Filters aligned reads (e.g. low quality, mitochondrial reads, etc.) to improve signal-to-noise ratio.
+
+- **peaks**  
+  Performs peak calling to identify enriched regions (supports both narrow and broad marks) using macs3.
+
+- **diffbind**  
+  Generates consensus peak using DiffBind and according to the most wanted minimum overlap.
+
+- **coverage**  
+  Generates coverage tracks (e.g. bigWig) for visualization in genome browsers.
+
+---
+
+#### General parameter
+
+- **spikein**  
+  Disabled by default (`false`). Spike-in normalization is currently not supported in this pipeline.
+
+---
+
+### Notes
+
+- Parameters are grouped into:
+  - **First steps** → preprocessing and alignment  
+  - **Second steps** → downstream analyses  
+
+- Each group can be activated globally using:
+  - `--first_steps true`
+  - `--second_steps true`
+
+- Alternatively, you can simplify execution by adding a global parameter:
+    - `--all true`
+
+## Example run
 
 ```bash
-nextflow run main.nf --samplesheet data/example_samplesheet.csv --all true
+nextflow run main.nf \
+  --samplesheet data/example_samplesheet.csv \
+  --first_steps true \
+  --second_steps true \
+  -profile slurm
 ```
 
+---
+
+## Output
+
+The pipeline generates:
+
+- Quality control reports (FastQC and MultiQC)
+- Trimmed FASTQ files
+- Alignment files (BAM + indexes)
+- Filtered BAM files (Duplicated and Deduplicated)
+- Peak files (narrowPeak / broadPeak)
+- Differential consensus peaks (DiffBind)
+- Coverage tracks (bigWig)
+
+
+## Project status
+
+⚠️ This pipeline is under active development.
+
+- HPC execution: ✅ supported  
+- Local execution: ❌ not yet supported  
+
+## Reproducibility
+
+All steps are executed within containerized environments (Singularity/Apptainer), ensuring reproducibility across HPC systems.
 
 ## Summary
 
