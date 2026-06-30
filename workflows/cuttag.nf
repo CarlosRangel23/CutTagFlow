@@ -214,20 +214,20 @@ workflow CUTTAG {
     }
 
     //-------------------------------------------------------------------------
-    // GLOBAL NORMALIZATION FACTOR ESTIMATION (ChIPseqSpikeInFree)
+    // CONSENSUS PEAKS
     // -------------------------------------------------------------------------
-//     def all_filtered_bams_ch = final_filtered_dup_bam_ch.mix(final_filtered_dedup_bam_ch)
-// 
-//     if (params.normalization) {
-//         SPIKEIN_FREE( 
-//             all_filtered_bams_ch.map { sample, bam, label, histone_mark -> bam }.collect(),
-//             all_filtered_bams_ch.map { sample, bam, label, histone_mark -> tuple(sample, label, histone_mark) }.collect()
-//         )
-//         
-//         // ---------------------------------------------------------------------
-//         // QUANTITATIVE VISUALIZATION GENERATION (DeepTools)
-//         // ---------------------------------------------------------------------
-//         // Combinamos la tupla original del BAM con el archivo de factores de normalización calculados
+    def all_filtered_bams_ch = final_filtered_dup_bam_ch.mix(final_filtered_dedup_bam_ch)
+ 
+     if (params.diffbind) {
+         CONSENSUS(CALLPEAK_WITH_DUPS.peak_file 
+             all_filtered_bams_ch.map { sample, bam, label, histone_mark -> bam }.collect(),
+             all_filtered_bams_ch.map { sample, bam, label, histone_mark -> tuple(sample, label, histone_mark) }.collect()
+         )
+         
+    // ---------------------------------------------------------------------
+    // QUANTITATIVE VISUALIZATION GENERATION (DeepTools)
+    // ---------------------------------------------------------------------
+//  if (params.coverage) {
 //         DEEPTOOLS_COVERAGE( all_filtered_bams_ch, SPIKEIN_FREE.out.scaling_factors )
 //     }
 //
