@@ -18,7 +18,7 @@ Currently, CutTagFlow is supported **only in HPC environments** with:
 - A **job scheduler / queue manager** (e.g. SLURM, PBS, SGE)
 - Containerized execution via **Singularity or Apptainer** (Docker images can be used through these)
 
-⚠️ **Local execution is not yet supported**, including:
+**Local execution is not yet supported**, including:
 - Interactive local servers
 - Personal workstations or laptops  
 

@@ -23,8 +23,9 @@ include { FRIP_SCORE as FRIP_SCORE_DUP } from '../modules/04_peak_calling/frip_s
 include { FRIP_SCORE as FRIP_SCORE_DEDUP } from '../modules/04_peak_calling/frip_score'
 include { PLOT_GLOBAL_QC } from '../modules/04_peak_calling/plot_global_qc'
 include { CONSENSUS } from '../modules/04_peak_calling/consensus'
-// include { DIFFBIND } from '../modules/04_peak_calling/diffbind'
-// include { COVERAGE } from '../modules/05_visualization/coverage'
+include { DIFFBIND } from '../modules/04_peak_calling/diffbind'
+// include { COVERAGE as  } from '../modules/05_visualization/coverage'
+// include { COVERAGE as  } from '../modules/05_visualization/coverage'
 // include { SPIKEIN_FREE } from '../modules/05_visualization/spikein_free'
 
 
@@ -246,16 +247,52 @@ workflow CUTTAG {
         
     }
 
-
     if (params.diffbind){
-        DIFFBIND()
+        if (params.peaks){
+            diffbind_input_ch = consensus_input_ch.map { meta, peaks, bams ->
+                                                tuple(meta, peaks, bams, params.min_overlap) }
+            DIFFBIND(diffbind_input_ch)
+        }
+        else {
+            with_dups_fallback = samples_ch.map { sample, f1, f2, histone_mark ->
+                def peak_pattern = "${params.outdir}/04_peak_calling/withDups/${histone_mark}/${sample}/${sample}.withDups_peaks.{narrowPeak,broadPeak}"
+                def peak_files   = files(peak_pattern)
+                def peak_path    = peak_files ? peak_files[0] : error("No peak file found for ${sample} (withDups) in results directory.")
+                def bam_path     = file("${params.outdir}/03_filtered/${histone_mark}/withDups/${sample}/${sample}.withDups.filtered.bam", checkIfExists: true)
+
+                return tuple( tuple("withDups", histone_mark), peak_path, bam_path )
+            }
+
+            no_dups_fallback = samples_ch.map { sample, f1, f2, histone_mark ->
+                def peak_pattern = "${params.outdir}/04_peak_calling/noDups/${histone_mark}/${sample}/${sample}.noDups_peaks.{narrowPeak,broadPeak}"
+                def peak_files   = files(peak_pattern)
+                def peak_path    = peak_files ? peak_files[0] : error("No peak file found for ${sample} (noDups) in results directory.")
+                def bam_path     = file("${params.outdir}/03_filtered/${histone_mark}/noDups/${sample}/${sample}.noDups.filtered.bam", checkIfExists: true)
+                
+                return tuple( tuple("noDups", histone_mark), peak_path, bam_path )
+            }
+
+            all_fallback_peaks_ch = with_dups_fallback.mix(no_dups_fallback)
+                .map { meta, peak, bam -> tuple(meta, peak) }
+                .groupTuple()
+
+            all_fallback_bams_ch = with_dups_fallback.mix(no_dups_fallback)
+                .map { meta, peak, bam -> tuple(meta, bam) }
+                .groupTuple()
+
+            diffbind_input_ch = all_fallback_peaks_ch.join(all_fallback_bams_ch)
+                .map { meta, peaks, bams -> tuple(meta, peaks, bams, params.min_overlap) }
+
+            DIFFBIND(diffbind_input_ch)
+        }    
     }
 
     // ---------------------------------------------------------------------
     // QUANTITATIVE VISUALIZATION GENERATION (DeepTools)
     // ---------------------------------------------------------------------
-  if (params.coverage) {
-         DEEPTOOLS_COVERAGE( all_filtered_bams_ch, SPIKEIN_FREE.out.scaling_factors )
+    if (params.coverage) {
+        DEEPTOOLS_COVERAGE_DUPS( final_filtered_dup_bam_ch, "withDups", scale.factor.FRIP )
+        DEEPTOOLS_COVERAGE_DEDUPS( final_filtered_dedup_bam_ch, "noDups", scale.factor.FRIP )
      }
 
 
