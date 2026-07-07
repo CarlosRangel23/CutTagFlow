@@ -167,10 +167,10 @@ The pipeline generates:
 
 ## Project status
 
-⚠️ This pipeline is under active development.
+This pipeline is under active development.
 
-- HPC execution: ✅ supported  
-- Local execution: ❌ not yet supported  
+- HPC execution: supported  
+- Local execution: not yet supported  
 
 ## Reproducibility
 

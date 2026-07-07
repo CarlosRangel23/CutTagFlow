@@ -22,8 +22,10 @@ include { MACS3 as CALLPEAK_WITH_DUPS } from '../modules/04_peak_calling/macs3'
 include { FRIP_SCORE as FRIP_SCORE_DUP } from '../modules/04_peak_calling/frip_score'
 include { FRIP_SCORE as FRIP_SCORE_DEDUP } from '../modules/04_peak_calling/frip_score'
 include { PLOT_GLOBAL_QC } from '../modules/04_peak_calling/plot_global_qc'
+include { CONSENSUS } from '../modules/04_peak_calling/consensus'
+// include { DIFFBIND } from '../modules/04_peak_calling/diffbind'
+// include { COVERAGE } from '../modules/05_visualization/coverage'
 // include { SPIKEIN_FREE } from '../modules/05_visualization/spikein_free'
-// include { DEEPTOOLS_COVERAGE } from '../modules/05_visualization/deeptools_coverage'
 
 
 workflow CUTTAG {
@@ -136,6 +138,12 @@ workflow CUTTAG {
             }
 
         // DUP BRANCH: Preserving Duplicating Traces (Standard practice in CUT&Tag)
+        // FROM HENIKOFF LAB: CUT&Tag integrates adapters into DNA in the vicinity of the antibody-tethered pA-Tn5, and the exact sites of integration are affected 
+        // by the accessibility of surrounding DNA. For this reason fragments that share exact starting and ending positions are expected to be common, and such ‘duplicates’
+        // may not be due to duplication during PCR. In practice, we have found that the apparent duplication rate is low for high quality CUT&Tag datasets, and even the
+        // apparent ‘duplicate’ fragments are likely to be true fragments. Thus, we DO NOT recommend removing the duplicates. In experiments with very small amounts of 
+        // material or where PCR duplication is suspected, duplicates can be removed.
+
         FILTER_DUP_BAM(bam_marked_ch, 'withDups', params.blacklist_bed)
         PLOT_QC_FILTERED(
             FILTER_DUP_BAM.out.frag_len.collect(),
@@ -210,26 +218,45 @@ workflow CUTTAG {
                                            .mix(CALLPEAK_DEDUP.out.summary)
                                            .collect()
 
-        PLOT_GLOBAL_QC(all_qc_files_ch, all_cutoffs_ch)    
+        PLOT_GLOBAL_QC(all_qc_files_ch, all_cutoffs_ch) 
+
+        //-------------------------------------------------------------------------
+        // CONSENSUS PEAKS
+        // -------------------------------------------------------------------------
+        
+        with_dups_peaks = CALLPEAK_WITH_DUPS.out.peak_file
+                                            .map { sample, histone_mark, peak -> 
+                                            tuple( tuple("withDups", histone_mark), peak ) }
+
+        no_dups_peaks = CALLPEAK_DEDUP.out.peak_file
+                                      .map { sample, histone_mark, peak ->
+                                      tuple( tuple("noDups", histone_mark), peak ) }
+
+        with_dups_bams = final_filtered_dup_bam_ch
+                                            .map { sample, bam, bai, histone_mark -> tuple( tuple("withDups", histone_mark), bam ) }
+
+        no_dups_bams = final_filtered_dedup_bam_ch
+                                            .map { sample, bam, bai, histone_mark -> tuple( tuple("noDups", histone_mark), bam ) }        
+
+        all_peaks_ch = with_dups_peaks.mix(no_dups_peaks).groupTuple()
+        all_bams_ch  = with_dups_bams.mix(no_dups_bams).groupTuple()
+        consensus_input_ch = all_peaks_ch.join(all_bams_ch)
+
+        CONSENSUS(consensus_input_ch)
+        
     }
 
-    //-------------------------------------------------------------------------
-    // CONSENSUS PEAKS
-    // -------------------------------------------------------------------------
-    def all_filtered_bams_ch = final_filtered_dup_bam_ch.mix(final_filtered_dedup_bam_ch)
- 
-     if (params.diffbind) {
-         CONSENSUS(CALLPEAK_WITH_DUPS.peak_file 
-             all_filtered_bams_ch.map { sample, bam, label, histone_mark -> bam }.collect(),
-             all_filtered_bams_ch.map { sample, bam, label, histone_mark -> tuple(sample, label, histone_mark) }.collect()
-         )
-         
+
+    if (params.diffbind){
+        DIFFBIND()
+    }
+
     // ---------------------------------------------------------------------
     // QUANTITATIVE VISUALIZATION GENERATION (DeepTools)
     // ---------------------------------------------------------------------
-//  if (params.coverage) {
-//         DEEPTOOLS_COVERAGE( all_filtered_bams_ch, SPIKEIN_FREE.out.scaling_factors )
-//     }
-//
+  if (params.coverage) {
+         DEEPTOOLS_COVERAGE( all_filtered_bams_ch, SPIKEIN_FREE.out.scaling_factors )
+     }
+
 
 }
