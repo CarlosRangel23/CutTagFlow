@@ -9,7 +9,6 @@ include { TRIM } from '../modules/01_preprocessing/trimming'
 include { MULTIQC as MULTIQC_RAW } from '../modules/01_preprocessing/multiqc'
 include { MULTIQC as MULTIQC_TRIM } from '../modules/01_preprocessing/multiqc'
 include { ALIGNMENT } from '../modules/02_alignment/alignment'
-// include { SPIKEIN_ALIGNMENT } from '../modules/02_alignment/spike_in_alignment'
 include { PLOT_ALIGNMENT } from '../modules/02_alignment/plotting_alignment'
 include { MARK_DUPLICATES } from '../modules/02_alignment/mark_duplicates'
 include { PLOT_QC_METRICS } from '../modules/02_alignment/plot_alignment_metrics'
@@ -24,9 +23,8 @@ include { FRIP_SCORE as FRIP_SCORE_DEDUP } from '../modules/04_peak_calling/frip
 include { PLOT_GLOBAL_QC } from '../modules/04_peak_calling/plot_global_qc'
 include { CONSENSUS } from '../modules/04_peak_calling/consensus'
 include { DIFFBIND } from '../modules/04_peak_calling/diffbind'
-// include { COVERAGE as  } from '../modules/05_visualization/coverage'
-// include { COVERAGE as  } from '../modules/05_visualization/coverage'
-// include { SPIKEIN_FREE } from '../modules/05_visualization/spikein_free'
+include { SPIKE_IN_FREE } from '../modules/05_visualization/spikeinfree'
+include { COVERAGE as DEEPTOOLS_COVERAGE_DEDUPS } from '../modules/05_visualization/coverage'
 
 
 workflow CUTTAG {
@@ -116,11 +114,6 @@ workflow CUTTAG {
             MARK_DUPLICATES.out.idxstats.collect() 
         )    
     }
-
-//    if (params.spikein == 'dm6' || params.spikein == 'ecoli') {     
-//        SPIKEIN_ALIGNMENT(trimmed_fastq_ch, params.spikein)
-//        PLOT_ALIGNMENT( SPIKEIN_ALIGNMENT.out.summary.collect() )        
-//    }
 
     // -------------------------------------------------------------------------
     // PARALLEL FILTERING BRANCHES (With Duplicates vs Deduplicated)
@@ -291,9 +284,28 @@ workflow CUTTAG {
     // QUANTITATIVE VISUALIZATION GENERATION (DeepTools)
     // ---------------------------------------------------------------------
     if (params.coverage) {
-        DEEPTOOLS_COVERAGE_DUPS( final_filtered_dup_bam_ch, "withDups", scale.factor.FRIP )
-        DEEPTOOLS_COVERAGE_DEDUPS( final_filtered_dedup_bam_ch, "noDups", scale.factor.FRIP )
+        final_filtered_dedup_bam_ch
+            .multiMap { sample, bam, bai, histone_mark ->
+                bams: bam
+                bais: bai
+            }
+            .set { gathered_files_ch }
+
+        // 2. Ejecutamos SpikeInFree
+        SPIKE_IN_FREE( 
+            gathered_files_ch.bams.collect(), 
+            gathered_files_ch.bais.collect(), 
+            file(params.meta_spike) 
+        )
+        
+        // 3. Para DeepTools, combinamos el canal de cada muestra con el archivo de factores de escalado GLOBAL
+        // El operador .combine() añade el archivo txt a cada tupla de muestra
+        deeptools_input_ch = final_filtered_dedup_bam_ch.combine(SPIKE_IN_FREE.out.scaling_factors)
+
+        // Ahora cada elemento de este canal es: [sample, bam, bai, histone_mark, scaling_factors.txt]
+        DEEPTOOLS_COVERAGE_DEDUPS( deeptools_input_ch )
      }
 
-
 }
+
+
