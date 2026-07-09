@@ -304,6 +304,31 @@ workflow CUTTAG {
         DEEPTOOLS_COVERAGE_DEDUPS( deeptools_input_ch )
      }
 
+    // ---------------------------------------------------------------------
+    // VARIANT CALLING 
+    // ---------------------------------------------------------------------
+    if (params.variant) {
+        final_filtered_dedup_bam_ch
+            .multiMap { sample, bam, bai, histone_mark ->
+                bams: bam
+                bais: bai
+            }
+            .set { gathered_files_ch }
+
+        SPIKE_IN_FREE( 
+            gathered_files_ch.bams.collect(), 
+            gathered_files_ch.bais.collect(), 
+            file(params.meta_spike), 
+            params.chromFile 
+        )
+
+
+        deeptools_input_ch = final_filtered_dedup_bam_ch.combine(SPIKE_IN_FREE.out.scaling_factors)
+        
+        DEEPTOOLS_COVERAGE_DEDUPS( deeptools_input_ch )
+     }
+
+
 }
 
 
