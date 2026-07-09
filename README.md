@@ -32,22 +32,16 @@ flowchart TD
     C --> E
     E --> F
 
-    subgraph Analysis
-        G[📦 Duplicated BAMs]
-        H[📦 Deduplicated BAMs]
-
-        F --> G
-        F --> H
-
-        G --> I[🎯 MACS3 Peak Calling]
-        H --> I
-
-        I --> J[📈 DiffBind Consensus Peaks]
-
-        H --> K[⚖️ Scale Factor Calculation]
-        K --> L[📉 DeepTools Coverage Tracks]
-
-        H --> M[🧬 GATK Variant Calling]
+    G[📦 Duplicated BAMs]
+    H[📦 Deduplicated BAMs]
+    F --> G
+    F --> H
+    G --> I[🎯 MACS3 Peak Calling]
+    H --> I
+    I --> J[📈 DiffBind Consensus Peaks]
+    H --> K[⚖️ Scale Factor Calculation]
+    K --> L[📉 DeepTools Coverage Tracks]
+    H --> M[🧬 GATK Variant Calling]
     end
     
     classDef qc fill:#D6EAF8,stroke:#2471A3,stroke-width:2px,color:#000;
