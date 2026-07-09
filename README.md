@@ -1,7 +1,6 @@
 # CutTagFlow
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
-[![License](https://img.shields.io/se/CarlosRangel23/CutTagFlow)](./LICENSE)
-[![Follow on Twitter/X](https://img.shields.io/badge/X-@rangelpelaezc-black?logo=x)](https://x.com/rangelpelaezc)
+[![Twitter/X](https://img.shields.io/badge/X-@rangelpelaezc-black?logo=x)](https://x.com/rangelpelaezc)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-carlosrangelpelaez-0A66C2?logo=linkedin)](https://www.linkedin.com/in/carlosrangelpelaez/)
 [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--7697--1696-A6CE39?logo=orcid)](https://orcid.org/0000-0001-7697-1696)
 
@@ -16,22 +15,51 @@ This pipeline is optimized for histone modification profiling, supporting both:
 
 CutTagFlow is designed to work **without spike-in controls or IgG samples**, simplifying experimental design while maintaining robust analytical performance. To ensure optimal data interpretation, the pipeline performs analyses **both with duplicate reads retained and with duplicates removed**, allowing users to choose the most appropriate result depending on signal characteristics.
 
+### Workflow
 ```mermaid
 flowchart TD
-    A[FASTQ files] --> B[FastQC and MultiQC]
-    A --> C[Trimming]
-    C --> D[FastQC and MultiQC]
-    C --> E[Bowtie2 Alignment]
-    E --> F[Filtering]
-    F --> G[Duplicated BAMs]
-    F --> H[Deduplicated BAMs]
-    H --> I[Peak Calling MACS3]
-    G --> I
-    I --> J[Consensus peaks DiffBind]
-    H --> K[Scale Factor Calculation]
-    H --> L[Coverage Tracks DeepTools]
-    K --> L
-    H --> M[GATK Variant Calling]
+
+    A[📁 FASTQ Files]
+    B[📊 FastQC + MultiQC]
+    C[✂️ Read Trimming]
+    D[📊 FastQC + MultiQC]
+    E[🧬 Bowtie2 Alignment]
+    F[🔍 BAM Filtering]
+
+    A --> B
+    A --> C
+    C --> D
+    C --> E
+    E --> F
+
+    subgraph Analysis
+        G[📦 Duplicated BAMs]
+        H[📦 Deduplicated BAMs]
+
+        F --> G
+        F --> H
+
+        G --> I[🎯 MACS3 Peak Calling]
+        H --> I
+
+        I --> J[📈 DiffBind Consensus Peaks]
+
+        H --> K[⚖️ Scale Factor Calculation]
+        K --> L[📉 DeepTools Coverage Tracks]
+
+        H --> M[🧬 GATK Variant Calling]
+    end
+    
+    classDef qc fill:#D6EAF8,stroke:#2471A3,stroke-width:2px,color:#000;
+    classDef align fill:#D5F5E3,stroke:#1E8449,stroke-width:2px,color:#000;
+    classDef peak fill:#FADBD8,stroke:#C0392B,stroke-width:2px,color:#000;
+    classDef downstream fill:#FCF3CF,stroke:#B7950B,stroke-width:2px,color:#000;
+
+    class A,B,C,D qc;
+    class E,F,G,H align;
+    class I,J peak;
+    class K,L,M downstream;
+
 ```
 
 ### Execution environment
