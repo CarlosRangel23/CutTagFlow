@@ -56,17 +56,41 @@ flowchart TD
 ```
 
 ### Execution environment
+CutTagFlow is highly portable and supports execution in both high-performance computing (HPC) clusters and personal local environments through pre-configured profiles.
 
-Currently, CutTagFlow is supported **only in HPC environments** with:
+#### 1. HPC Environments
+For large-scale processing, the pipeline natively integrates with:
+- A **job scheduler / queue manager** (e.g., SLURM, PBS, SGE).
+- Containerized execution via **Singularity/Apptainer**.
 
-- A **job scheduler / queue manager** (e.g. SLURM, PBS, SGE)
-- Containerized execution via **Singularity or Apptainer** (Docker images can be used through these)
+You may change some specifications dependending on your HPC system. To launch the pipeline in an HPC environment using SLURM, run:
 
-**Local execution is not yet supported**, including:
-- Interactive local servers
-- Personal workstations or laptops  
+```bash
+nextflow run main.nf -profile slurm
+```
 
-Support for local environments may be added in future versions.
+#### 2. Local Environments (Workstations & Laptops)
+To run the pipeline locally for testing, development, or smaller datasets, you only need to have the following dependencies installed:
+
+- **Java** (version 17 or later)
+- **Nextflow** (version 23 or later)
+- **Docker**
+
+To launch the pipeline in your local environment, run:
+
+```bash
+nextflow run main.nf -profile going_merry
+```
+
+**Smart Resource Management:** By default, the `going_merry` profile is designed to dynamically cap CPU usage at a maximum of **70% of your machine's total capacity**, leaving at least 30% completely free so your computer remains smooth and responsive. If you wish to change this threshold, you can pass your desired maximum percentage directly via the command line using the --max_cpu_percent parameter. For example, to cap it at 50% or push it to 90%:
+
+```bash
+# Run using only 50% of your local CPUs
+nextflow run main.nf -profile going_merry --max_cpu_percent 50
+
+# Run using 90% of your local CPUs
+nextflow run main.nf -profile going_merry --max_cpu_percent 90
+```
 
 ### Installation
 
@@ -76,11 +100,6 @@ CutTagFlow does not require a traditional installation. You can simply clone the
 git clone https://github.com/CarlosRangel23/CutTagFlow.git
 cd CutTagFlow
 ```
-
-#### Requirements
-
-* Nextflow (DSL2 compatible versions)
-* Singularity or Apptainer (recommended for HPC environments)
 
 ## Usage
 ### Input data format
@@ -116,7 +135,7 @@ BPES4_H3K4me3,/path/to/file_r1.fastq.gz,/path/to/file_r2.fastq.gz,H3K4me3
 ```
 
 ### Running the pipeline
-Before running, load Nextflow in your HPC cluster. Be aware that your cluster may have some guidance or specific rules for using Nextflow.
+Before running, load Nextflow if you are in a HPC cluster. Be aware that your cluster may have some guidance or specific rules for using Nextflow.
 
 ```bash
 module load apps/binapps/nextflow/25.10.4
@@ -188,20 +207,3 @@ The pipeline generates:
 - Differential consensus peaks (DiffBind)
 - Coverage tracks (bigWig)
 - VCF file for each histone mark group
-
-
-## Project status
-
-This pipeline is under active development.
-
-- HPC execution: supported  
-- Local execution: not yet supported  
-
-
-## Summary
-
-* Spike-in or IgG samples not supported
-* Supports narrow and broad histone marks
-* Runs analyses with and without duplicates
-* Designed for HPC environments with containers
-* Modular execution with flexible parameter control
