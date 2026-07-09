@@ -1,7 +1,9 @@
 # CutTagFlow
+[![GitHub release](https://img.shields.io/github/v/release/CarlosRangel23/CutTagFlow)](https://github.com/gFlow/releases)
+[![License](https://img.shields.io/github/licensel23/CutTagFlow)](LICENSE)
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
-[![Twitter/X](https://img.shields.io/badge/Twitter-@rangelpelaezc](https://x.com/rangelpelaezc)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-carlosrangelpelaez-linkedin](https://www.linkedin.com/in/carlosrangelpelaez/)
+[![Twitter/X](https://img.shields.io/badge/Twitter-@rangelpelaezc)](https://x.com/rangelpelaezc)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-carlosrangelpelaez-0A66C2?logo=linkedin)](https://www.linkedin.com/in/carlosrangelpelaez/)
 [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--7697--1696-A6CE39?logo=orcid)](https://orcid.org/0000-0001-7697-1696)
 
 
@@ -17,18 +19,40 @@ CutTagFlow is designed to work **without spike-in controls or IgG samples**, sim
 
 ```mermaid
 flowchart TD
-    A[FASTQ files] --> B[FastQC]
-    B --> C[Trim]
-    C --> D[FastQC Trimmed]
+    A[FASTQ files] --> B[FastQC and MultiQC]
+    A --> C[Trimming]
+    C --> D[FastQC and MultiQC]
+    D --> E[Bowtie2 Alignment]
+    E --> F[Filtering]
+    F --> G[Duplicated BAMs]
+    F --> H[Deduplicated BAMs]
+    G --> I[Peak Calling MACS3]
+    I --> J[Consensus peaks DiffBind]
+    H --> K[ScaleFactor calculation]
+    H --> L[Coverage Tracks]
+    H --> M[Variant Calling]
+```
+
+```mermaid
+flowchart TD
+    A[FASTQ files] --> B[FastQC + MultiQC]
+    B --> C[Trimming]
+    C --> D[FastQC + MultiQC]
     D --> E[Bowtie2 Alignment]
     E --> F[Filtering]
 
-    F --> G[Peak Calling MACS3]
-    G --> H[DiffBind]
-    H --> I[Consensus Peaks]
+    F --> G[Duplicated BAMs]
+    F --> H[Deduplicated BAMs]
 
-    F --> J[Coverage Tracks]
-    F --> K[Variant Calling]
+    G --> I[MACS3 Peak Calling]
+    H --> J[MACS3 Peak Calling]
+
+    I --> K[DiffBind Consensus Peaks]
+    J --> K
+
+    H --> L[Scale Factor Calculation]
+    H --> M[Coverage Tracks BigWig]
+    H --> N[GATK Variant Calling]
 ```
 
 ### Execution environment
@@ -108,7 +132,8 @@ nextflow run main.nf --samplesheet data/example_samplesheet.csv [options]
 
 #### First steps (preprocessing and alignment)
 
-- **first_steps** → perform all preprocessing and alignment    
+- **first_steps** 
+  Performs all preprocessing and alignment    
 
 - **fastqc**  
   Runs quality control on raw FASTQ files using FastQC. Runs also MultiQC.
@@ -124,7 +149,8 @@ nextflow run main.nf --samplesheet data/example_samplesheet.csv [options]
 
 #### Second steps (downstream analysis)
 
-- **second_steps** → perform all downstream analyses
+- **second_steps** 
+  Performs all downstream analyses
 
 - **filtering**  
   Filters aligned reads (e.g. low quality, mitochondrial reads, etc.) to improve signal-to-noise ratio.
