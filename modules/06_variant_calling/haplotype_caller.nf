@@ -4,8 +4,6 @@ process GATK_HAPLOTYPE_CALLER {
     tag "${sample}"
     label 'process_medium'
 
-    publishDir "${params.outdir}/06_variant_calling/gvcf", mode: 'copy'
-
     input:
     tuple val(sample), path(bam), path(bai), val(histone_mark)
 

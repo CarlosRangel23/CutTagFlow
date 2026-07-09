@@ -1,6 +1,7 @@
 # CutTagFlow
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
-[![Twitter/X](https://img.shields.io/badge/X-@rangelpelaezc-black?logo=x)](https://x.com/rangelpelaezc)
+[![License](https://img.shieldscense-Apache%202.0-blue.svg)](./LICENSE)
+[![Follow on Twitter/X](https://img.shields.io/badge/X-@rangelpelaezc-black?logo=x)](https://x.com/rangelpelaezc)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-carlosrangelpelaez-0A66C2?logo=linkedin)](https://www.linkedin.com/in/carlosrangelpelaez/)
 [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--7697--1696-A6CE39?logo=orcid)](https://orcid.org/0000-0001-7697-1696)
 
@@ -18,19 +19,23 @@ CutTagFlow is designed to work **without spike-in controls or IgG samples**, sim
 ### Workflow
 ```mermaid
 flowchart TD
+
   A[📁 FASTQ Files]
   B[📊 FastQC + MultiQC]
   C[✂️ Read Trimming]
   D[📊 FastQC + MultiQC]
   E[🧬 Bowtie2 Alignment]
   F[🔍 BAM Filtering]
+
   A --> B
   A --> C
   C --> D
   C --> E
   E --> F
+
   G[📦 Duplicated BAMs]
   H[📦 Deduplicated BAMs]
+
   F --> G
   F --> H
   G --> I[🎯 MACS3 Peak Calling]
@@ -127,8 +132,8 @@ nextflow run main.nf --samplesheet data/example_samplesheet.csv [options]
 
 #### First steps (preprocessing and alignment)
 
-- **first_steps** 
-  Performs all preprocessing and alignment    
+- **first_steps**  
+  Performs all preprocessing and alignment
 
 - **fastqc**  
   Runs quality control on raw FASTQ files using FastQC. Runs also MultiQC.
@@ -144,7 +149,7 @@ nextflow run main.nf --samplesheet data/example_samplesheet.csv [options]
 
 #### Second steps (downstream analysis)
 
-- **second_steps** 
+- **second_steps**  
   Performs all downstream analyses
 
 - **filtering**  
@@ -159,7 +164,7 @@ nextflow run main.nf --samplesheet data/example_samplesheet.csv [options]
 - **coverage**  
   Generates coverage tracks (e.g. bigWig) for visualization in genome browsers.
 
-- **variant**
+- **variant**  
   Performs GATK variant calling
 
 #### Example run
