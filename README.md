@@ -1,8 +1,7 @@
 # CutTagFlow
-[![GitHub release](https://img.shields.io/github/v/release/CarlosRangel23/CutTagFlow)](https://github.com/gFlow/releases)
-[![License](https://img.shields.io/github/licensel23/CutTagFlow)](LICENSE)
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
-[![Twitter/X](https://img.shields.io/badge/Twitter-@rangelpelaezc)](https://x.com/rangelpelaezc)
+[![License](https://img.shields.io/github/licensel23/CutTagFlow)](./LICENSE)
+[![Follow on Twitter/X](http://img.shields.io/badge/twitter-%40rangelpelaezc-1DA1F2?labelColor=000000&logo=twitter)](https://x.com/rangelpelaezc)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-carlosrangelpelaez-0A66C2?logo=linkedin)](https://www.linkedin.com/in/carlosrangelpelaez/)
 [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--7697--1696-A6CE39?logo=orcid)](https://orcid.org/0000-0001-7697-1696)
 
@@ -26,33 +25,13 @@ flowchart TD
     E --> F[Filtering]
     F --> G[Duplicated BAMs]
     F --> H[Deduplicated BAMs]
-    G --> I[Peak Calling MACS3]
+    F --> I[Peak Calling MACS3]
+    G --> I
     I --> J[Consensus peaks DiffBind]
-    H --> K[ScaleFactor calculation]
-    H --> L[Coverage Tracks]
-    H --> M[Variant Calling]
-```
-
-```mermaid
-flowchart TD
-    A[FASTQ files] --> B[FastQC + MultiQC]
-    B --> C[Trimming]
-    C --> D[FastQC + MultiQC]
-    D --> E[Bowtie2 Alignment]
-    E --> F[Filtering]
-
-    F --> G[Duplicated BAMs]
-    F --> H[Deduplicated BAMs]
-
-    G --> I[MACS3 Peak Calling]
-    H --> J[MACS3 Peak Calling]
-
-    I --> K[DiffBind Consensus Peaks]
-    J --> K
-
-    H --> L[Scale Factor Calculation]
-    H --> M[Coverage Tracks BigWig]
-    H --> N[GATK Variant Calling]
+    H --> K[Scale Factor Calculation]
+    H --> L[Coverage Tracks DeepTools]
+    K --> L
+    H --> M[GATK Variant Calling]
 ```
 
 ### Execution environment
