@@ -291,18 +291,16 @@ workflow CUTTAG {
             }
             .set { gathered_files_ch }
 
-        // 2. Ejecutamos SpikeInFree
         SPIKE_IN_FREE( 
             gathered_files_ch.bams.collect(), 
             gathered_files_ch.bais.collect(), 
-            file(params.meta_spike) 
+            file(params.meta_spike), 
+            params.chromFile 
         )
-        
-        // 3. Para DeepTools, combinamos el canal de cada muestra con el archivo de factores de escalado GLOBAL
-        // El operador .combine() añade el archivo txt a cada tupla de muestra
-        deeptools_input_ch = final_filtered_dedup_bam_ch.combine(SPIKE_IN_FREE.out.scaling_factors)
 
-        // Ahora cada elemento de este canal es: [sample, bam, bai, histone_mark, scaling_factors.txt]
+
+        deeptools_input_ch = final_filtered_dedup_bam_ch.combine(SPIKE_IN_FREE.out.scaling_factors)
+        
         DEEPTOOLS_COVERAGE_DEDUPS( deeptools_input_ch )
      }
 

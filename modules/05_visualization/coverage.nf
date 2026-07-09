@@ -7,26 +7,22 @@ process COVERAGE {
     publishDir "${params.outdir}/05_visualization/coverage/${histone_mark}/${sample}", mode: 'copy'
 
     input:
-    tuple val(sample), path(bam), path(bai), val(histone_mark), 
+    tuple val(sample), path(bam), path(bai), val(histone_mark), path (sf_file)
 
     output:
     tuple val(sample), path("*.bw"), emit: bigwig
 
     script:
     """
-    Rscript -e "
-    library(ChIPseqSpikeInFree)
-    write.lines('${bam}', 'bam_list.txt')
-    ChIPseqSpikeInFree(bamIndexFile = 'bam_list.txt', chromFile = 'hg38')
-    "
-
-    SCALE_FACTOR=\$(awk 'NR==2 {print \$2}' *export.txt || awk 'NR==2 {print \$2}' *_ChIPseqSpikeInFree.txt)
-
+    SCALE_FACTOR=\$(grep "${bam.name}" ${sf_file} | awk '{print \$7}')
+    
     bamCoverage \\
         -b ${bam} \\
-        -o ${sample}.${histone_mark}.normalized.bw \\
+        -o ${sample}.bw \\
+        -of "bigwig" \\
+        -e \\
+        -p ${task.cpus} \\
         --scaleFactor \$SCALE_FACTOR \\
-        -p max \\
         --binSize 10
     """
 }
