@@ -18,42 +18,36 @@ CutTagFlow is designed to work **without spike-in controls or IgG samples**, sim
 ### Workflow
 ```mermaid
 flowchart TD
-
-    A[📁 FASTQ Files]
-    B[📊 FastQC + MultiQC]
-    C[✂️ Read Trimming]
-    D[📊 FastQC + MultiQC]
-    E[🧬 Bowtie2 Alignment]
-    F[🔍 BAM Filtering]
-
-    A --> B
-    A --> C
-    C --> D
-    C --> E
-    E --> F
-
-    G[📦 Duplicated BAMs]
-    H[📦 Deduplicated BAMs]
-    F --> G
-    F --> H
-    G --> I[🎯 MACS3 Peak Calling]
-    H --> I
-    I --> J[📈 DiffBind Consensus Peaks]
-    H --> K[⚖️ Scale Factor Calculation]
-    K --> L[📉 DeepTools Coverage Tracks]
-    H --> M[🧬 GATK Variant Calling]
-    end
-    
-    classDef qc fill:#D6EAF8,stroke:#2471A3,stroke-width:2px,color:#000;
-    classDef align fill:#D5F5E3,stroke:#1E8449,stroke-width:2px,color:#000;
-    classDef peak fill:#FADBD8,stroke:#C0392B,stroke-width:2px,color:#000;
-    classDef downstream fill:#FCF3CF,stroke:#B7950B,stroke-width:2px,color:#000;
-
-    class A,B,C,D qc;
-    class E,F,G,H align;
-    class I,J peak;
-    class K,L,M downstream;
-
+  A[📁 FASTQ Files]
+  B[📊 FastQC + MultiQC]
+  C[✂️ Read Trimming]
+  D[📊 FastQC + MultiQC]
+  E[🧬 Bowtie2 Alignment]
+  F[🔍 BAM Filtering]
+  A --> B
+  A --> C
+  C --> D
+  C --> E
+  E --> F
+  G[📦 Duplicated BAMs]
+  H[📦 Deduplicated BAMs]
+  F --> G
+  F --> H
+  G --> I[🎯 MACS3 Peak Calling]
+  H --> I
+  I --> J[📈 DiffBind Consensus Peaks]
+  H --> K[⚖️ Scale Factor Calculation]
+  K --> L[📉 DeepTools Coverage Tracks]
+  H --> M[🧬 GATK Variant Calling]
+  
+  classDef qc fill:#D6EAF8,stroke:#2471A3,stroke-width:2px,color:#000;
+  classDef align fill:#D5F5E3,stroke:#1E8449,stroke-width:2px,color:#000;
+  classDef peak fill:#FADBD8,stroke:#C0392B,stroke-width:2px,color:#000;
+  classDef downstream fill:#FCF3CF,stroke:#B7950B,stroke-width:2px,color:#000;
+  class A,B,C,D qc;
+  class E,F,G,H align;
+  class I,J peak;
+  class K,L,M downstream;
 ```
 
 ### Execution environment
