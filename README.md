@@ -1,9 +1,8 @@
 # CutTagFlow
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
-[![Twitter/X](https://img.shields.io/badge/Twitter-@rangelpelaezc-1DA1F2?logo=x)/(rangelpelaezc)
+[![Twitter/X](https://img.shields.io/badge/Twitter-@rangelpelaezc-1DA1F2?logo=x)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-carlosrangelpelaez-0A66C2?logo=linkedin)](https://www.n/carlosrangelpelaez/)
 [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--7697--1696-A6CE39?logo=orcid)](https://orcid.org/0000-0001-7697-1696)
-(https://img.shields.io/badge/Scopus-Author-orange)](https://www.scopus.com/authid/detail.uri?authorId)
 
 
 CutTagFlow is a reproducible and scalable Nextflow pipeline designed for the processing and analysis of CUT&Tag sequencing data, from raw reads to high-quality peak calling and downstream quality control.

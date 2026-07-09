@@ -16,7 +16,7 @@ def log_banner() {
     
     ==============================================================================
     Pipeline : CUT&Tag Analysis Pipeline (No Spike-in and No control IgG Edition)
-    Author   : Carlos Rangel, 30/06/2026
+    Author   : Carlos Rangel, 13/07/2026
     Profile  : ${workflow.profile}
     User     : ${workflow.userName}
     ==============================================================================

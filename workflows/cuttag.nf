@@ -25,6 +25,8 @@ include { CONSENSUS } from '../modules/04_peak_calling/consensus'
 include { DIFFBIND } from '../modules/04_peak_calling/diffbind'
 include { SPIKE_IN_FREE } from '../modules/05_visualization/spikeinfree'
 include { COVERAGE as DEEPTOOLS_COVERAGE_DEDUPS } from '../modules/05_visualization/coverage'
+include { GATK_HAPLOTYPE_CALLER } from '../modules/06_variant_calling/haplotype_caller'
+include { GATK_JOINT_GENOTYPING } from '../modules/06_variant_calling/joint_genotyping'
 
 
 workflow CUTTAG {
@@ -308,26 +310,22 @@ workflow CUTTAG {
     // VARIANT CALLING 
     // ---------------------------------------------------------------------
     if (params.variant) {
-        final_filtered_dedup_bam_ch
-            .multiMap { sample, bam, bai, histone_mark ->
-                bams: bam
-                bais: bai
-            }
-            .set { gathered_files_ch }
-
-        SPIKE_IN_FREE( 
-            gathered_files_ch.bams.collect(), 
-            gathered_files_ch.bais.collect(), 
-            file(params.meta_spike), 
-            params.chromFile 
+        GATK_HAPLOTYPE_CALLER( 
+            final_filtered_dedup_bam_ch, 
+            file(params.genome_fasta), 
+            file(params.genome_fai), 
+            file(params.genome_dict)
         )
 
+        joint_input_ch = GATK_HAPLOTYPE_CALLER.out.gvcf.groupTuple()
 
-        deeptools_input_ch = final_filtered_dedup_bam_ch.combine(SPIKE_IN_FREE.out.scaling_factors)
-        
-        DEEPTOOLS_COVERAGE_DEDUPS( deeptools_input_ch )
-     }
-
+        GATK_JOINT_GENOTYPING( 
+            joint_input_ch, 
+            file(params.genome_fasta), 
+            file(params.genome_fai), 
+            file(params.genome_dict)
+        )
+    }
 
 }
 
