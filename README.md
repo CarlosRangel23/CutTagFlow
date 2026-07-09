@@ -1,6 +1,6 @@
 # CutTagFlow
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
-[![License](https://img.shieldscense-Apache%202.0-blue.svg)](./LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 [![Follow on Twitter/X](https://img.shields.io/badge/X-@rangelpelaezc-black?logo=x)](https://x.com/rangelpelaezc)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-carlosrangelpelaez-0A66C2?logo=linkedin)](https://www.linkedin.com/in/carlosrangelpelaez/)
 [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--7697--1696-A6CE39?logo=orcid)](https://orcid.org/0000-0001-7697-1696)
