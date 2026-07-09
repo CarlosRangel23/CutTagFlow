@@ -1,7 +1,7 @@
 # CutTagFlow
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
-[![License](https://img.shields.io/github/licensel23/CutTagFlow)](./LICENSE)
-[![Follow on Twitter/X](http://img.shields.io/badge/twitter-%40rangelpelaezc-1DA1F2?labelColor=000000&logo=twitter)](https://x.com/rangelpelaezc)
+[![License](https://img.shields.io/se/CarlosRangel23/CutTagFlow)](./LICENSE)
+[![Follow on Twitter/X](https://img.shields.io/badge/X-@rangelpelaezc-black?logo=x)](https://x.com/rangelpelaezc)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-carlosrangelpelaez-0A66C2?logo=linkedin)](https://www.linkedin.com/in/carlosrangelpelaez/)
 [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--7697--1696-A6CE39?logo=orcid)](https://orcid.org/0000-0001-7697-1696)
 
@@ -21,11 +21,11 @@ flowchart TD
     A[FASTQ files] --> B[FastQC and MultiQC]
     A --> C[Trimming]
     C --> D[FastQC and MultiQC]
-    D --> E[Bowtie2 Alignment]
+    C --> E[Bowtie2 Alignment]
     E --> F[Filtering]
     F --> G[Duplicated BAMs]
     F --> H[Deduplicated BAMs]
-    F --> I[Peak Calling MACS3]
+    H --> I[Peak Calling MACS3]
     G --> I
     I --> J[Consensus peaks DiffBind]
     H --> K[Scale Factor Calculation]
