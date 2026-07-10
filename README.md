@@ -104,7 +104,7 @@ cd CutTagFlow
 ## Usage
 ### Input data format
 
-Input samples must be specified in a samplesheet following the format defined in [data/example_samplesheet.csv](https://github.com/CarlosRangel23/CutTagFlow/blob/main/data/example_samplesheet.csv)
+Input samples must be specified in a samplesheet following the format defined in [data/example_samplesheet.csv](https://github.com/CarlosRangel23/CutTagFlow/blob/main/data/example_samplesheet.csv). Importantly, modify all options available and references needed for the pipeline in [conf/params.config](https://github.com/CarlosRangel23/CutTagFlow/blob/main/conf/params.config)
 
 #### Required columns
 The samplesheet must contain the following columns:
@@ -182,6 +182,8 @@ nextflow run main.nf --samplesheet data/example_samplesheet.csv [options]
 
 - **coverage**  
   Generates coverage tracks (e.g. bigWig) for visualization in genome browsers.
+
+For this step, you need to add `--meta_spike` parameter. Example is defined here: [data/sample_metadata.txt](https://github.com/CarlosRangel23/CutTagFlow/blob/main/data/sample_metadata.txt).
 
 - **variant**  
   Performs GATK variant calling
