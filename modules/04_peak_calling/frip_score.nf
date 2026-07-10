@@ -45,7 +45,7 @@ process FRIP_SCORE {
     echo "sample,histone_mark,label,total_reads,frip_tss_2kb,frip_peaks" > ${sample}.${label}.frip.csv
     echo "${sample},${histone_mark},${label},\$total_reads,\$frip_tss,\$frip_peaks" >> ${sample}.${label}.frip.csv
 
-    # 6. Remove remaining intermediate files
+    # 6. Remove intermediate files
     rm tss_2kb.bed
     """
 }
