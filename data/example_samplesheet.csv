@@ -1,5 +1,5 @@
 sample,fastq1,fastq2,histone_mark
 BPES2_H3K27Ac,path/to/BPES2_H3K27Ac_r1.fastq.gz,path/to/BPES2_H3K27Ac_r2.fastq.gz,H3K27Ac
 BPES2_H3K4me3,path/to/BPES2_H3K27Ac_r1.fastq.gz,path/to/BPES2_H3K27Ac_r2.fastq.gz,H3K4me3
-BPES4_H3K27Ac,path/to/BPES2_H3K27Ac_r1.fastq.gz,path/to/BPES2_H3K27Ac_r2.fastq.gz,H3K27Ac
-BPES4_H3K4me3,path/to/BPES2_H3K27Ac_r1.fastq.gz,path/to/BPES2_H3K27Ac_r2.fastq.gz,H3K4me3
+BPES4_H3K27Ac,path/to/BPES4_H3K27Ac_r1.fastq.gz,path/to/BPES4_H3K27Ac_r2.fastq.gz,H3K27Ac
+BPES4_H3K4me3,path/to/BPES4_H3K27Ac_r1.fastq.gz,path/to/BPES4_H3K27Ac_r2.fastq.gz,H3K4me3
