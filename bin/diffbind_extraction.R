@@ -39,7 +39,7 @@ df_diffbind <- do.call(rbind, data_for_diffbind)
 
 # 2. Initialize DiffBind Object with the user-defined minOverlap
 dba_obj <- dba(sampleSheet = df_diffbind, minOverlap = min_overlap)
-dba_obj <- dba.count(dba_obj, summits = FALSE)
+dba_obj <- dba.count(dba_obj, summits = FALSE, minOverlap = min_overlap)
 
 # 3. Retrieve the Consensus Peakset
 consensus_peaks <- dba.peakset(dba_obj, bRetrieve = TRUE, DataType = DBA_DATA_FRAME)
