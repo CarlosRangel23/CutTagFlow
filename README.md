@@ -74,7 +74,7 @@ To run the pipeline locally for testing, development, or smaller datasets, you o
 
 - **Java** (version 17 or later)
 - **Nextflow** (version 23 or later)
-- **Docker**
+- **Apptainer/Singularity**
 
 To launch the pipeline in your local environment, run:
 
