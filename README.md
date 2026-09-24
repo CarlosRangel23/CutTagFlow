@@ -66,7 +66,7 @@ For large-scale processing, the pipeline natively integrates with:
 You may change some specifications dependending on your HPC system. To launch the pipeline in an HPC environment using SLURM, run:
 
 ```bash
-nextflow run main.nf -profile slurm
+NXF_VER=25.10.4 nextflow run main.nf -profile slurm
 ```
 
 #### 2. Local Environments (Workstations & Laptops)
@@ -79,17 +79,17 @@ To run the pipeline locally for testing, development, or smaller datasets, you o
 To launch the pipeline in your local environment, run:
 
 ```bash
-nextflow run main.nf -profile going_merry
+NXF_VER=25.10.4 nextflow run main.nf -profile going_merry
 ```
 
 **Smart Resource Management:** By default, the `going_merry` profile is designed to dynamically cap CPU usage at a maximum of **70% of your machine's total capacity**, leaving at least 30% completely free so your computer remains smooth and responsive. If you wish to change this threshold, you can pass your desired maximum percentage directly via the command line using the --max_cpu_percent parameter. For example, to cap it at 50% or push it to 90%:
 
 ```bash
 # Run using only 50% of your local CPUs
-nextflow run main.nf -profile going_merry --max_cpu_percent 50
+NXF_VER=25.10.4 nextflow run main.nf -profile going_merry --max_cpu_percent 50
 
 # Run using 90% of your local CPUs
-nextflow run main.nf -profile going_merry --max_cpu_percent 90
+NXF_VER=25.10.4 nextflow run main.nf -profile going_merry --max_cpu_percent 90
 ```
 
 ### Installation
@@ -142,7 +142,7 @@ module load apps/binapps/nextflow/25.10.4
 ```
 
 ```bash
-nextflow run main.nf --samplesheet data/example_samplesheet.csv [options]
+NXF_VER=25.10.4 nextflow run main.nf --samplesheet data/example_samplesheet.csv [options]
 ```
 
 ### Available parameters
@@ -191,7 +191,7 @@ For this step, you need to add `--meta_spike` parameter. Example is defined here
 #### Example run
 
 ```bash
-nextflow run main.nf \
+NXF_VER=25.10.4 nextflow run main.nf \
   --samplesheet data/example_samplesheet.csv \
   --first_steps true \
   -profile slurm
