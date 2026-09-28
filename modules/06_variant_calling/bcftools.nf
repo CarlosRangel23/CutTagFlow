@@ -26,7 +26,6 @@ process BCFTOOLS {
     """
     set -o pipefail
 
-    # 1) mpileup + call (todos los BAM de la marca en un único VCF multi-muestra)
     bcftools mpileup \
         -f ${fasta} \
         -q 20 \
@@ -41,20 +40,16 @@ process BCFTOOLS {
         -Oz \
         -o ${prefix}.raw.vcf.gz
 
-    # 2) filtro
     bcftools filter \
         -e 'QUAL<20 || DP<10 || MQ<30' \
         ${prefix}.raw.vcf.gz \
         -Oz \
         -o ${prefix}.filtered.vcf.gz
 
-    # 3) índice
     tabix -p vcf ${prefix}.filtered.vcf.gz
 
-    # 4) stats
     bcftools stats ${prefix}.filtered.vcf.gz > ${prefix}.stats.txt
 
-    # 5) PLINK2 (lee el .vcf.gz directamente, no hace falta gunzip)
     plink2 \
         --vcf ${prefix}.filtered.vcf.gz \
         --make-bed \

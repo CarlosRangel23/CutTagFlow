@@ -1,5 +1,6 @@
 results/
 data/samplesheet.csv
+data/sample_metadata.txt
 work/
 .nextflow.log*
-
+atac

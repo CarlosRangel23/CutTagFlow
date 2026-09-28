@@ -335,6 +335,7 @@ workflow CUTTAG {
             bcftools_input_ch,
             file(params.genome_fasta),
             file(params.genome_fai)
+        )
     }
 
 }
