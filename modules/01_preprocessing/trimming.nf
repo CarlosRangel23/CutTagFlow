@@ -4,7 +4,9 @@ process TRIM {
 
     tag "${histone_mark}/${sample}"
     label 'qc'
-
+    publishDir "${params.outdir}/01_qc/trimmed/${histone_mark}/${sample}",
+          mode: 'copy'
+          
     input:
     tuple val(sample), path(fastq1), path(fastq2), val(histone_mark)
 
@@ -14,8 +16,7 @@ process TRIM {
           path("${sample}_trimmed_R1.fastq.gz"),
           path("${sample}_trimmed_R2.fastq.gz")
 
-    publishDir "${params.outdir}/01_qc/trimmed/${histone_mark}/${sample}",
-          mode: 'copy'
+
 
     script:
     """

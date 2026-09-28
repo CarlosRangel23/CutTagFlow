@@ -4,6 +4,7 @@ process MULTIQC {
 
     tag "${qc_label}/${histone_mark}"
     label 'qc'
+    publishDir "${params.outdir}/01_qc/multiqc/${qc_label}/${histone_mark}", mode: 'copy'
 
     input:
     tuple val(histone_mark), path(qc_files)
@@ -13,7 +14,6 @@ process MULTIQC {
     path "multiqc_${qc_label}_${histone_mark}.html"
     path "multiqc_${qc_label}_${histone_mark}_data"
 
-    publishDir "${params.outdir}/01_qc/multiqc/${qc_label}/${histone_mark}", mode: 'copy'
     
     script:
     """

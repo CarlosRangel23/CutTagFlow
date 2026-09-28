@@ -3,6 +3,7 @@ nextflow.enable.dsl = 2
 process MACS3 {
     tag "MACS3 Callpeak (${sample} - ${label})"
     label 'process_medium'
+    publishDir "${params.outdir}/04_peak_calling/${label}/${histone_mark}/${sample}", mode: 'copy'
 
     input:
     tuple val(sample), path(bam), path(bai), val(histone_mark)
@@ -15,7 +16,6 @@ process MACS3 {
     tuple val(sample), val(histone_mark), path("*.{narrowPeak,broadPeak}"), emit: peak_file
     path "*_cutoff_analysis.txt"                                          , emit: summary
 
-    publishDir "${params.outdir}/04_peak_calling/${label}/${histone_mark}/${sample}", mode: 'copy'
 
     script:
     def macs3_args = ""

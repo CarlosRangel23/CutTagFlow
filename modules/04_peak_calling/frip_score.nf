@@ -3,6 +3,7 @@ nextflow.enable.dsl = 2
 process FRIP_SCORE {
     tag "${sample} - ${label}"
     label 'process_low'
+    publishDir "${params.outdir}/04_peak_calling/${label}/${histone_mark}/FRIP", mode: 'copy'
 
     input:
     tuple val(sample), val(histone_mark), path(bam), path(bai), path(peak)
@@ -13,7 +14,6 @@ process FRIP_SCORE {
     output:
     tuple val(sample), val(histone_mark), val(label), path("${sample}.${label}.frip.csv"), emit: metrics_csv
     
-    publishDir "${params.outdir}/04_peak_calling/${label}/${histone_mark}/FRIP", mode: 'copy'
 
 
  script:

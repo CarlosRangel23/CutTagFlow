@@ -1,0 +1,5 @@
+ID	ANTIBODY	GROUP
+BPES2_H3K27Ac.noDups.filtered.bam	H3K27Ac	disease
+BPES2_H3K4me3.noDups.filtered.bam	H3K4me3	disease
+BPES4_H3K27Ac.noDups.filtered.bam	H3K27Ac	Ctrl
+BPES4_H3K4me3.noDups.filtered.bam	H3K4me3	Ctrl

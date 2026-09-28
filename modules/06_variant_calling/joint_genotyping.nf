@@ -3,7 +3,6 @@ nextflow.enable.dsl = 2
 process GATK_JOINT_GENOTYPING {
     tag "${histone_mark} samples"
     label 'process_high'
-
     publishDir "${params.outdir}/06_variant_calling/${histone_mark}", mode: 'copy'
 
     input:

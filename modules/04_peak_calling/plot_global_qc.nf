@@ -3,6 +3,7 @@ nextflow.enable.dsl = 2
 process PLOT_GLOBAL_QC {
     tag "Global QC Plotting"
     label 'process_low'
+    publishDir "${params.outdir}/04_peak_calling/Advanced_QC", mode: 'copy'
 
 
     input:
@@ -16,7 +17,6 @@ process PLOT_GLOBAL_QC {
     path "MACS3_cutoff_peaks_impact_filtered.png"  , emit: cutoff_filtered_plot
     path "Experiment_QC_Summary.csv"               , emit: final_table
 
-    publishDir "${params.outdir}/04_peak_calling/Advanced_QC", mode: 'copy'
 
     script:
     """

@@ -4,6 +4,7 @@ process FILTER_BAM {
 
     tag "${histone_mark}/${sample} (${label})"
     label 'process_medium'
+    publishDir "${params.outdir}/03_filtered/${histone_mark}/${label}/${sample}", mode: 'copy'
 
     input:
     tuple val(sample), path(bam), path(bai), val(histone_mark)
@@ -16,7 +17,6 @@ process FILTER_BAM {
     path "${sample}.${label}.idxstats.txt",                                                    emit: idxstats
     path "${sample}.${label}.fragmentLen.txt",                                                 emit: frag_len
 
-    publishDir "${params.outdir}/03_filtered/${histone_mark}/${label}/${sample}", mode: 'copy'
 
     script:
     def samtools_flags = (label == 'noDups') ? "-F 1804" : "-F 780"

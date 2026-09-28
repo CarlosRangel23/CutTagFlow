@@ -4,6 +4,7 @@ process MARK_DUPLICATES {
 
     tag "$sample"
     label 'process_medium'
+    publishDir "${params.outdir}/02_alignment/temp_picard_idxstats/${sample}", mode: 'copy'
 
     input:
     tuple val(sample), path(bam), val(histone_mark)
@@ -15,7 +16,6 @@ process MARK_DUPLICATES {
     path "${sample}_fragmentLen.txt"                                            , emit: frag_len
     path "${sample}_idxstats.txt"                                               , emit: idxstats
 
-    publishDir "${params.outdir}/02_alignment/temp_picard_idxstats/${sample}", mode: 'copy'
 
     script:
     """

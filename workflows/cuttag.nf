@@ -27,6 +27,7 @@ include { SPIKE_IN_FREE } from '../modules/05_visualization/spikeinfree'
 include { COVERAGE as DEEPTOOLS_COVERAGE_DEDUPS } from '../modules/05_visualization/coverage'
 include { GATK_HAPLOTYPE_CALLER } from '../modules/06_variant_calling/haplotype_caller'
 include { GATK_JOINT_GENOTYPING } from '../modules/06_variant_calling/joint_genotyping'
+include { BCFTOOLS } from '../modules/06_variant_calling/bcftools'
 
 
 workflow CUTTAG {
@@ -325,6 +326,15 @@ workflow CUTTAG {
             file(params.genome_fai), 
             file(params.genome_dict)
         )
+
+        bcftools_input_ch = final_filtered_dedup_bam_ch
+            .map { sample, bam, bai, histone_mark -> tuple(histone_mark, bam, bai) }
+            .groupTuple(sort: true)
+
+        BCFTOOLS(
+            bcftools_input_ch,
+            file(params.genome_fasta),
+            file(params.genome_fai)
     }
 
 }

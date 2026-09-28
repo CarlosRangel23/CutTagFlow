@@ -4,6 +4,7 @@ process ALIGNMENT {
 
     tag "${histone_mark}/${sample}"
     label 'process_high' 
+    publishDir "${params.outdir}/02_alignment/temp_align/${sample}", mode: 'copy'
 
     input:
     tuple val(sample), path(fastq1), path(fastq2), val(histone_mark)
@@ -14,7 +15,6 @@ process ALIGNMENT {
     path "${sample}.sorted.bam.bai"                                   , emit: bai
     path "${sample}.bowtie2.txt"                                      , emit: summary
 
-    publishDir "${params.outdir}/02_alignment/temp_align/${sample}", mode: 'copy'
 
     script:
     def cores = task.cpus

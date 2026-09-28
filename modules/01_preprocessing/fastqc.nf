@@ -4,6 +4,8 @@ process FASTQC {
 
     tag "${histone_mark}/${sample}"
     label 'qc'
+    publishDir "${params.outdir}/01_qc/${qc_label}/${histone_mark}/${sample}",
+      mode: 'copy'
 
     input:
     tuple val(sample), path(fastq1), path(fastq2), val(histone_mark)
@@ -11,9 +13,6 @@ process FASTQC {
 
     output:
     tuple path("*_fastqc.zip"), path("*_fastqc.html"), val(histone_mark)
-
-    publishDir "${params.outdir}/01_qc/${qc_label}/${histone_mark}/${sample}",
-          mode: 'copy'
 
     script:
     """
