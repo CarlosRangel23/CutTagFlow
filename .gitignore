@@ -4,4 +4,4 @@ data/sample_metadata.txt
 work/
 .nextflow.log*
 atac
-data/genome.fa
+data/reference/genome.fa
