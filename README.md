@@ -186,7 +186,7 @@ nextflow run main.nf --samplesheet data/example_samplesheet.csv [options]
 For this step, you need to add `--meta_spike` parameter. Example is defined here: [data/sample_metadata.txt](https://github.com/CarlosRangel23/CutTagFlow/blob/main/data/sample_metadata.txt).
 
 - **variant**  
-  Performs GATK variant calling
+  Performs GATK variant calling and bcftools
 
 #### Example run
 
