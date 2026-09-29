@@ -5,3 +5,4 @@ work/
 .nextflow.log*
 atac
 data/reference/genome.fa
+data/reference/Bowtie2Index
