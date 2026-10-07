@@ -54,7 +54,8 @@ consensus_bed <- data.frame(
   START = as.integer(consensus_peaks$START - 1), 
   END   = as.integer(consensus_peaks$END),
   NAME  = paste0(consensus_peaks$CHR, ":", consensus_peaks$START
-
+  )
+)
 # 4. Save Outputs using structured naming conventions
 out_prefix <- paste0("DiffBind_", mark, "_", lbl, "_minOverlap", min_overlap)
 
