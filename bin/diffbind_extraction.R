@@ -2,6 +2,7 @@
 
 library(DiffBind)
 library(tidyverse)
+library(GenomicRanges)
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 5) stop("Usage: diffbind_extraction.R <label> <histone_mark> <comma_separated_peaks> <comma_separated_bams> <min_overlap>")
@@ -39,26 +40,26 @@ df_diffbind <- do.call(rbind, data_for_diffbind)
 
 # 2. Initialize DiffBind Object with the user-defined minOverlap
 dba_obj <- dba(sampleSheet = df_diffbind, minOverlap = min_overlap)
-dba_obj <- dba.count(dba_obj, summits = FALSE, minOverlap = min_overlap)
 
 # 3. Retrieve the Consensus Peakset
 consensus_peaks <- dba.peakset(dba_obj, bRetrieve = TRUE, DataType = DBA_DATA_FRAME)
+dba_obj_raw <- dba.count(dba_obj, peaks=consensus_peaks, score = DBA_SCORE_READS, bParallel=TRUE, summits = FALSE)
+counts <- dba.peakset(dba_obj_raw, bRetrieve = TRUE, DataType = DBA_DATA_FRAME)
+peak_id <- paste(counts$CHR, counts$START, counts$END, sep=":")
+counts_for_DESeq2 <- as.matrix(counts[,4:ncol(counts)])
+rownames(counts_for_DESeq2) <- peak_id 
 
-consensus_df <- consensus_peaks %>%
-  mutate(peak_id = paste0(CHR, ":", START, "-", END))
- 
 consensus_bed <- data.frame(
-        CHR   = consensus_df$CHR,
-        START = as.integer(consensus_df$START - 1), 
-        END   = as.integer(consensus_df$END),
-        NAME  = consensus_df$peak_id,
-        stringsAsFactors = FALSE
-    )
+  CHR   = consensus_peaks$CHR,
+  START = as.integer(consensus_peaks$START - 1), 
+  END   = as.integer(consensus_peaks$END),
+  NAME  = paste0(consensus_peaks$CHR, ":", consensus_peaks$START
+
 # 4. Save Outputs using structured naming conventions
 out_prefix <- paste0("DiffBind_", mark, "_", lbl, "_minOverlap", min_overlap)
 
 # Save the full RData environment/object for downstream differential analysis
-save(dba_obj, consensus_peaks, file = paste0(out_prefix, ".RData"))
+save(dba_obj_raw, consensus_peaks, counts_for_DESeq2, file = paste0(out_prefix, ".RData"))
 write.table(consensus_bed, file = paste0(out_prefix, "consensus_bed.bed"), quote = FALSE,
   sep = "\t", row.names = FALSE, col.names = FALSE)
 
