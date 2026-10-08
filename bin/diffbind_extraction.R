@@ -43,7 +43,7 @@ dba_obj <- dba(sampleSheet = df_diffbind, minOverlap = min_overlap)
 
 # 3. Retrieve the Consensus Peakset
 consensus_peaks <- dba.peakset(dba_obj, bRetrieve = TRUE, DataType = DBA_DATA_FRAME)
-dba_obj_raw <- dba.count(dba_obj, peaks=consensus_peaks, score = DBA_SCORE_READS, bParallel=TRUE, summits = FALSE)
+dba_obj_raw <- dba.count(dba_obj, peaks=consensus_peaks, score = DBA_SCORE_READS, bParallel=FALSE, summits = FALSE)
 counts <- dba.peakset(dba_obj_raw, bRetrieve = TRUE, DataType = DBA_DATA_FRAME)
 peak_id <- paste(counts$CHR, counts$START, counts$END, sep=":")
 counts_for_DESeq2 <- as.matrix(counts[,4:ncol(counts)])
@@ -53,9 +53,9 @@ consensus_bed <- data.frame(
   CHR   = consensus_peaks$CHR,
   START = as.integer(consensus_peaks$START - 1), 
   END   = as.integer(consensus_peaks$END),
-  NAME  = paste0(consensus_peaks$CHR, ":", consensus_peaks$START
-  )
+  NAME  = paste0(consensus_peaks$CHR, ":", consensus_peaks$START, "-", consensus_peaks$END)
 )
+
 # 4. Save Outputs using structured naming conventions
 out_prefix <- paste0("DiffBind_", mark, "_", lbl, "_minOverlap", min_overlap)
 
